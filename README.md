@@ -1,4 +1,13 @@
 
+# Purpose
+
+We want to help people use the HoloLens as a Computer Vision and Robotics research device.
+The project was launched at CVPR 2017, and we intend to extend it as new capabilities become available on the HoloLens.
+
+# Contents
+
+Sample code shown at CVPR 2017 will be available here by August 8th, 2017.
+
 # Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
