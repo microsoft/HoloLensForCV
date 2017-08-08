@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{9b8da2c1-c8f7-40f7-971e-acd650c65df7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\OpenCVHelpers">
+      <UniqueIdentifier>{09e4e925-fe99-46a4-bb96-a77ca14bdab1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="OpenCVHelpers.cpp" />
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="OpenCVTexture2D.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Include\OpenCVHelpers\OpenCVHelpers.h">
+      <Filter>Include\OpenCVHelpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\OpenCVHelpers\All.h">
+      <Filter>Include\OpenCVHelpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\OpenCVHelpers\OpenCVTexture2D.h">
+      <Filter>Include\OpenCVHelpers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>

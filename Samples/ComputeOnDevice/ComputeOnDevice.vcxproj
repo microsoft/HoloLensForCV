@@ -1,0 +1,186 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props" Condition="Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props')" />
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{CF168211-03A8-419E-840B-3E6BF6688FD9}</ProjectGuid>
+    <Keyword>ComputeOnDevice</Keyword>
+    <RootNamespace>ComputeOnDevice</RootNamespace>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
+    <AppContainerApplication>true</AppContainerApplication>
+    <ApplicationType>Windows Store</ApplicationType>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.14393.0</WindowsTargetPlatformMinVersion>
+    <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
+    <EnableDotNetNativeCompatibleProfile>true</EnableDotNetNativeCompatibleProfile>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ImageContentTask.props" />
+    <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\MeshContentTask.props" />
+    <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ShaderGraphContentTask.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)\Shared\Debugging\Debugging.props" />
+    <Import Project="$(SolutionDir)\Shared\OpenCVHelpers\OpenCVHelpers.props" />
+    <Import Project="$(SolutionDir)\Shared\Graphics\Graphics.props" />
+    <Import Project="$(SolutionDir)\Shared\Holographic\Holographic.props" />
+    <Import Project="..\..\Shared\Rendering\Rendering.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)\Shared\Debugging\Debugging.props" />
+    <Import Project="$(SolutionDir)\Shared\OpenCVHelpers\OpenCVHelpers.props" />
+    <Import Project="$(SolutionDir)\Shared\Graphics\Graphics.props" />
+    <Import Project="$(SolutionDir)\Shared\Holographic\Holographic.props" />
+    <Import Project="..\..\Shared\Rendering\Rendering.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <PackageCertificateKeyFile>ComputeOnDevice_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Link>
+      <AdditionalDependencies>d2d1.lib; d3d11.lib; dxgi.lib; dwrite.lib; windowscodecs.lib; %(AdditionalDependencies); </AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(VCInstallDir)\lib\store; $(VCInstallDir)\lib</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>mincore.lib;kernel32.lib;ole32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <AdditionalOptions>/WHOLEARCHIVE:* %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <ClCompile>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Link>
+      <AdditionalDependencies>d2d1.lib; d3d11.lib; dxgi.lib; dwrite.lib; windowscodecs.lib; %(AdditionalDependencies); </AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(VCInstallDir)\lib\store; $(VCInstallDir)\lib</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>mincore.lib;kernel32.lib;ole32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <AdditionalOptions>/WHOLEARCHIVE:* %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <ClCompile>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(IntermediateOutputPath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Image Include="Assets\LockScreenLogo.scale-200.png" />
+    <Image Include="Assets\SplashScreen.scale-200.png" />
+    <Image Include="Assets\Square150x150Logo.scale-200.png" />
+    <Image Include="Assets\Square44x44Logo.scale-200.png" />
+    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
+    <Image Include="Assets\StoreLogo.png" />
+    <Image Include="Assets\Wide310x150Logo.scale-200.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AppMain.h" />
+    <ClInclude Include="AppView.h" />
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AppMain.cpp" />
+    <ClCompile Include="AppView.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest">
+      <SubType>Designer</SubType>
+    </AppxManifest>
+    <None Include="ComputeOnDevice_TemporaryKey.pfx" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(SolutionDir)\Shared\Debugging\Debugging.vcxproj">
+      <Project>{ad347424-7340-47ce-a979-2c7f2df0eb38}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Shared\Graphics\Graphics.vcxproj">
+      <Project>{39cd08ae-9700-49cf-8616-18c20644416f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Shared\HoloLensForCV\HoloLensForCV.vcxproj">
+      <Project>{208c932d-a71e-4c67-a444-0697e9a4226e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Shared\OpenCVHelpers\OpenCVHelpers.vcxproj">
+      <Project>{940a6d80-0775-4272-84c9-1585c4757071}</Project>
+    </ProjectReference>
+    <ProjectReference Include="$(SolutionDir)\Shared\Holographic\Holographic.vcxproj">
+      <Project>{a1f9e48f-49e3-4f8c-ac48-2efdbed4b873}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Shared\Io\Io.vcxproj">
+      <Project>{6e542043-c5d1-4850-b43e-e9295b640c2b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Shared\Rendering\Rendering.vcxproj">
+      <Project>{421bb462-74f2-4831-9ab7-06b77e0a98b4}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ImageContentTask.targets" />
+    <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\MeshContentTask.targets" />
+    <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ShaderGraphContentTask.targets" />
+    <Import Project="$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets" Condition="Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets')" />
+    <Import Project="$(SolutionDir)\packages\OpenCV.Win.Core.310.6.1\build\native\opencv.win.core.targets" Condition="Exists('$(SolutionDir)\packages\OpenCV.Win.Core.310.6.1\build\native\opencv.win.core.targets')" />
+    <Import Project="$(SolutionDir)\packages\OpenCV.Win.ImgProc.310.6.1\build\native\opencv.win.imgproc.targets" Condition="Exists('$(SolutionDir)\packages\OpenCV.Win.ImgProc.310.6.1\build\native\opencv.win.imgproc.targets')" />
+    <Import Project="$(SolutionDir)\packages\OpenCV.Win.FLANN.310.6.1\build\native\opencv.win.flann.targets" Condition="Exists('$(SolutionDir)\packages\OpenCV.Win.FLANN.310.6.1\build\native\opencv.win.flann.targets')" />
+    <Import Project="$(SolutionDir)\packages\OpenCV.Win.ImgCodecs.310.6.1\build\native\opencv.win.imgcodecs.targets" Condition="Exists('$(SolutionDir)\packages\OpenCV.Win.ImgCodecs.310.6.1\build\native\opencv.win.imgcodecs.targets')" />
+    <Import Project="$(SolutionDir)\packages\OpenCV.Win.ML.310.6.1\build\native\opencv.win.ml.targets" Condition="Exists('$(SolutionDir)\packages\OpenCV.Win.ML.310.6.1\build\native\opencv.win.ml.targets')" />
+    <Import Project="$(SolutionDir)\packages\OpenCV.Win.VideoIO.310.6.1\build\native\opencv.win.videoio.targets" Condition="Exists('$(SolutionDir)\packages\OpenCV.Win.VideoIO.310.6.1\build\native\opencv.win.videoio.targets')" />
+    <Import Project="$(SolutionDir)\packages\OpenCV.Win.HighGUI.310.6.1\build\native\opencv.win.highgui.targets" Condition="Exists('$(SolutionDir)\packages\OpenCV.Win.HighGUI.310.6.1\build\native\opencv.win.highgui.targets')" />
+    <Import Project="$(SolutionDir)\packages\OpenCV.Win.Features2D.310.6.1\build\native\opencv.win.features2d.targets" Condition="Exists('$(SolutionDir)\packages\OpenCV.Win.Features2D.310.6.1\build\native\opencv.win.features2d.targets')" />
+    <Import Project="$(SolutionDir)\packages\OpenCV.Win.Calib3D.310.6.1\build\native\opencv.win.calib3d.targets" Condition="Exists('$(SolutionDir)\packages\OpenCV.Win.Calib3D.310.6.1\build\native\opencv.win.calib3d.targets')" />
+  </ImportGroup>
+  <PropertyGroup>
+    <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
+  </PropertyGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\OpenCV.Win.Core.310.6.1\build\native\opencv.win.core.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\OpenCV.Win.Core.310.6.1\build\native\opencv.win.core.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\OpenCV.Win.ImgProc.310.6.1\build\native\opencv.win.imgproc.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\OpenCV.Win.ImgProc.310.6.1\build\native\opencv.win.imgproc.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\OpenCV.Win.FLANN.310.6.1\build\native\opencv.win.flann.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\OpenCV.Win.FLANN.310.6.1\build\native\opencv.win.flann.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\OpenCV.Win.ImgCodecs.310.6.1\build\native\opencv.win.imgcodecs.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\OpenCV.Win.ImgCodecs.310.6.1\build\native\opencv.win.imgcodecs.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\OpenCV.Win.ML.310.6.1\build\native\opencv.win.ml.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\OpenCV.Win.ML.310.6.1\build\native\opencv.win.ml.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\OpenCV.Win.VideoIO.310.6.1\build\native\opencv.win.videoio.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\OpenCV.Win.VideoIO.310.6.1\build\native\opencv.win.videoio.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\OpenCV.Win.HighGUI.310.6.1\build\native\opencv.win.highgui.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\OpenCV.Win.HighGUI.310.6.1\build\native\opencv.win.highgui.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\OpenCV.Win.Features2D.310.6.1\build\native\opencv.win.features2d.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\OpenCV.Win.Features2D.310.6.1\build\native\opencv.win.features2d.targets'))" />
+    <Error Condition="!Exists('$(SolutionDir)\packages\OpenCV.Win.Calib3D.310.6.1\build\native\opencv.win.calib3d.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\OpenCV.Win.Calib3D.310.6.1\build\native\opencv.win.calib3d.targets'))" />
+  </Target>
+</Project>

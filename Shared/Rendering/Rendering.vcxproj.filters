@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="MarkerRenderer.cpp" />
+    <ClCompile Include="PolylineRenderer.cpp" />
+    <ClCompile Include="SlateMaterial.cpp" />
+    <ClCompile Include="SlateRenderer.cpp" />
+    <ClCompile Include="Texture2D.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Include\Rendering\All.h">
+      <Filter>Include\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Rendering\MarkerRenderer.h">
+      <Filter>Include\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Rendering\PolylineRenderer.h">
+      <Filter>Include\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Rendering\SlateMaterial.h">
+      <Filter>Include\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Rendering\SlateRenderer.h">
+      <Filter>Include\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Rendering\SlateShaderStructures.h">
+      <Filter>Include\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Rendering\Texture2D.h">
+      <Filter>Include\Rendering</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{c26cfd5d-6509-4312-bfef-be72433734dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\Rendering">
+      <UniqueIdentifier>{a6cdaaa5-c3ac-4575-8292-764af8a56174}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{fddff745-221a-448c-855e-533d3b589a89}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="SlateMaterial.Default.gs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="SlateMaterial.Default.ps.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="SlateMaterial.Default.vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="SlateMaterial.VPRT.vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>

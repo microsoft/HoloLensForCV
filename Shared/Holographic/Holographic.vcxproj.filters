@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{f9315be1-7983-4cc9-af5c-63f1a1ea8c61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\Holographic">
+      <UniqueIdentifier>{48bed319-f16f-428a-b03e-a76020ad8cd7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="SpatialInputHandler.cpp" />
+    <ClCompile Include="AppMainBase.cpp" />
+    <ClCompile Include="AppViewBase.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Include\Holographic\All.h">
+      <Filter>Include\Holographic</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Holographic\SpatialInputHandler.h">
+      <Filter>Include\Holographic</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Holographic\AppMainBase.h">
+      <Filter>Include\Holographic</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Holographic\AppViewBase.h">
+      <Filter>Include\Holographic</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Holographic\IAppMain.h">
+      <Filter>Include\Holographic</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
