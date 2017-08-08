@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{4a1248f2-3da8-4928-85cd-b77258b9a871}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\Audio">
+      <UniqueIdentifier>{3aec1d0d-4077-405a-8a9c-92ed4c393d0f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="AudioFileReader.cpp" />
+    <ClCompile Include="AudioStreamReader.cpp" />
+    <ClCompile Include="OmnidirectionalSound.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Include\Audio\AudioFileReader.h">
+      <Filter>Include\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Audio\AudioStreamReader.h">
+      <Filter>Include\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Audio\OmnidirectionalSound.h">
+      <Filter>Include\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Audio\XAudio2Helpers.h">
+      <Filter>Include\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Audio\All.h">
+      <Filter>Include\Audio</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="BasicListeningEarcon.wav" />
+    <Media Include="BasicResultsEarcon.wav" />
+  </ItemGroup>
+</Project>

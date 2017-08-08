@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="CameraResources.cpp" />
+    <ClCompile Include="DeviceResources.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Include\Graphics\CameraResources.h">
+      <Filter>Include\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Graphics\DeviceResources.h">
+      <Filter>Include\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Graphics\DirectXHelper.h">
+      <Filter>Include\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Graphics\StepTimer.h">
+      <Filter>Include\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Graphics\All.h">
+      <Filter>Include\Graphics</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{cc3d9f13-e947-4c36-81a4-363ed10d96ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\Graphics">
+      <UniqueIdentifier>{59df7c20-1cf0-4725-8ad8-fc48a3fdff29}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Sensor Frame Acquisition">
+      <UniqueIdentifier>{f46c3312-b964-40e0-be37-1efcc02a13a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sensor Frame Recording">
+      <UniqueIdentifier>{a8e4fcd1-1dd3-4304-98f5-cca62ffd6a12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Spatial Perception">
+      <UniqueIdentifier>{f1ccfc33-78df-4aad-b2f8-7511c83a2048}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sensor Frame Receiver">
+      <UniqueIdentifier>{38fb8a13-19fe-4cce-9a64-4ca4716e5a3a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sensor Frame Streaming">
+      <UniqueIdentifier>{309ac171-0db4-46d1-bacc-0088cc98c9af}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="SensorFrame.cpp" />
+    <ClCompile Include="SensorFrameStreamingServer.cpp">
+      <Filter>Sensor Frame Streaming</Filter>
+    </ClCompile>
+    <ClCompile Include="SensorFrameStreamHeader.cpp">
+      <Filter>Sensor Frame Streaming</Filter>
+    </ClCompile>
+    <ClCompile Include="MediaFrameSourceGroup.cpp">
+      <Filter>Sensor Frame Acquisition</Filter>
+    </ClCompile>
+    <ClCompile Include="MediaFrameReaderContext.cpp">
+      <Filter>Sensor Frame Acquisition</Filter>
+    </ClCompile>
+    <ClCompile Include="SensorFrameRecorder.cpp">
+      <Filter>Sensor Frame Recording</Filter>
+    </ClCompile>
+    <ClCompile Include="SensorFrameStreamer.cpp">
+      <Filter>Sensor Frame Streaming</Filter>
+    </ClCompile>
+    <ClCompile Include="SensorFrameRecorderSink.cpp">
+      <Filter>Sensor Frame Recording</Filter>
+    </ClCompile>
+    <ClCompile Include="SpatialPerception.cpp">
+      <Filter>Spatial Perception</Filter>
+    </ClCompile>
+    <ClCompile Include="CsvWriter.cpp" />
+    <ClCompile Include="SensorFrameReceiver.cpp">
+      <Filter>Sensor Frame Receiver</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="SensorFrame.h" />
+    <ClInclude Include="SensorFrameStreamingServer.h">
+      <Filter>Sensor Frame Streaming</Filter>
+    </ClInclude>
+    <ClInclude Include="SensorFrameStreamHeader.h">
+      <Filter>Sensor Frame Streaming</Filter>
+    </ClInclude>
+    <ClInclude Include="MediaFrameSourceGroup.h">
+      <Filter>Sensor Frame Acquisition</Filter>
+    </ClInclude>
+    <ClInclude Include="MediaFrameSourceGroupType.h">
+      <Filter>Sensor Frame Acquisition</Filter>
+    </ClInclude>
+    <ClInclude Include="MediaFrameReaderContext.h">
+      <Filter>Sensor Frame Acquisition</Filter>
+    </ClInclude>
+    <ClInclude Include="SensorType.h" />
+    <ClInclude Include="SensorFrameRecorder.h">
+      <Filter>Sensor Frame Recording</Filter>
+    </ClInclude>
+    <ClInclude Include="SensorFrameStreamer.h">
+      <Filter>Sensor Frame Streaming</Filter>
+    </ClInclude>
+    <ClInclude Include="ISensorFrameSink.h" />
+    <ClInclude Include="SensorFrameRecorderSink.h">
+      <Filter>Sensor Frame Recording</Filter>
+    </ClInclude>
+    <ClInclude Include="ISensorFrameSinkGroup.h" />
+    <ClInclude Include="SpatialPerception.h">
+      <Filter>Spatial Perception</Filter>
+    </ClInclude>
+    <ClInclude Include="CsvWriter.h" />
+    <ClInclude Include="SensorFrameReceiver.h">
+      <Filter>Sensor Frame Receiver</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Include">
+      <UniqueIdentifier>{9d3d0a4d-6413-4ab9-a731-5b8b90386bdf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include\Io">
+      <UniqueIdentifier>{dacd946b-a153-4bb4-b837-c05b607eb8ef}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Tar.cpp" />
+    <ClCompile Include="BufferHelpers.cpp" />
+    <ClCompile Include="IoHelpers.cpp" />
+    <ClCompile Include="TimeConverter.cpp" />
+    <ClCompile Include="StringHelpers.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Include\Io\Tar.h">
+      <Filter>Include\Io</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Io\All.h">
+      <Filter>Include\Io</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Io\StorageHandleAccess.h">
+      <Filter>Include\Io</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Io\BufferHelpers.h">
+      <Filter>Include\Io</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Io\IoHelpers.h">
+      <Filter>Include\Io</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Io\TimeConverter.h">
+      <Filter>Include\Io</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Io\StringHelpers.h">
+      <Filter>Include\Io</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
