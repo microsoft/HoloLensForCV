@@ -124,6 +124,7 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <None Include="README.md" />
     <None Include="Recorder_TemporaryKey.pfx" />
     <None Include="packages.config" />
   </ItemGroup>

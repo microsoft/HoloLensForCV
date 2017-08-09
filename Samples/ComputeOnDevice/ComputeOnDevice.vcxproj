@@ -124,6 +124,7 @@
     </AppxManifest>
     <None Include="ComputeOnDevice_TemporaryKey.pfx" />
     <None Include="packages.config" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(SolutionDir)\Shared\Debugging\Debugging.vcxproj">
