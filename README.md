@@ -10,7 +10,10 @@ available on the HoloLens.
 This repository contains reusable components, samples and tools aimed to make it easier to use
 HoloLens as a tool for Computer Vision and Robotics research.
 
-   Take a quick look at the [HoloLensForCV UWP component](Shared/HoloLensForCV). This component is used by most of our samples and tools to access, stream and record HoloLens sensor data.
+   Take a quick look at the [HoloLensForCV UWP component](Shared/HoloLensForCV). This component is
+   used by most of our samples and tools to access, stream and record HoloLens sensor data.
+
+   Learn how to [build](wiki/Building) the project and [deploy](wiki/Running-the-samples) the samples.
 
    Learn how to [use OpenCV on HoloLens](Samples/ComputeOnDevice).
 

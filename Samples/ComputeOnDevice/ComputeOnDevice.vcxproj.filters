@@ -43,5 +43,6 @@
   <ItemGroup>
     <None Include="ComputeOnDevice_TemporaryKey.pfx" />
     <None Include="packages.config" />
+    <None Include="README.md" />
   </ItemGroup>
 </Project>

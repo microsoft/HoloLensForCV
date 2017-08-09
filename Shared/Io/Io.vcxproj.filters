@@ -41,4 +41,7 @@
       <Filter>Include\Io</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
 </Project>

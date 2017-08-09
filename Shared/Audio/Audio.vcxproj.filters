@@ -37,4 +37,7 @@
     <Media Include="BasicListeningEarcon.wav" />
     <Media Include="BasicResultsEarcon.wav" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
 </Project>
