@@ -112,28 +112,36 @@ namespace HoloLensForCV
         //
         // Extract the frame-to-origin transform, if the MFT exposed it:
         //
-        Platform::IBox<Windows::Foundation::Numerics::float4x4>^ frameToOriginReference =
-            frame->CoordinateSystem->TryGetTransformTo(
-                _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem);
+        bool frameToOriginObtained = false;
 
-        if (nullptr != frameToOriginReference)
+        if (nullptr != frame->CoordinateSystem)
         {
-#if DBG_ENABLE_VERBOSE_LOGGING
-            Windows::Foundation::Numerics::float4x4 frameToOrigin =
-                frameToOriginReference->Value;
+            Platform::IBox<Windows::Foundation::Numerics::float4x4>^ frameToOriginReference =
+                frame->CoordinateSystem->TryGetTransformTo(
+                    _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem);
 
-            dbg::trace(
-                L"frameToOrigin=[[%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f]]",
-                frameToOrigin.m11, frameToOrigin.m12, frameToOrigin.m13, frameToOrigin.m14,
-                frameToOrigin.m21, frameToOrigin.m22, frameToOrigin.m23, frameToOrigin.m24,
-                frameToOrigin.m31, frameToOrigin.m32, frameToOrigin.m33, frameToOrigin.m34,
-                frameToOrigin.m41, frameToOrigin.m42, frameToOrigin.m43, frameToOrigin.m44);
+            if (nullptr != frameToOriginReference)
+            {
+#if DBG_ENABLE_VERBOSE_LOGGING
+                Windows::Foundation::Numerics::float4x4 frameToOrigin =
+                    frameToOriginReference->Value;
+
+                dbg::trace(
+                    L"frameToOrigin=[[%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f]]",
+                    frameToOrigin.m11, frameToOrigin.m12, frameToOrigin.m13, frameToOrigin.m14,
+                    frameToOrigin.m21, frameToOrigin.m22, frameToOrigin.m23, frameToOrigin.m24,
+                    frameToOrigin.m31, frameToOrigin.m32, frameToOrigin.m33, frameToOrigin.m34,
+                    frameToOrigin.m41, frameToOrigin.m42, frameToOrigin.m43, frameToOrigin.m44);
 #endif /* DBG_ENABLE_VERBOSE_LOGGING */
 
-            sensorFrame->FrameToOrigin =
-                frameToOriginReference->Value;
+                sensorFrame->FrameToOrigin =
+                    frameToOriginReference->Value;
+
+                frameToOriginObtained = true;
+            }
         }
-        else
+
+        if (!frameToOriginObtained)
         {
             //
             // Set the FrameToOrigin to zero, making it obvious that we do not
