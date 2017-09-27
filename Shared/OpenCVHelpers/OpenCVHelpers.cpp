@@ -59,6 +59,6 @@ namespace rmcv
             bitmap->PixelHeight,
             bitmap->PixelWidth,
             wrappedImageType,
-            pixelBufferData).clone();
+            pixelBufferData);
     }
 }
