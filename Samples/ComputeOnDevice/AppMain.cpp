@@ -29,13 +29,6 @@ namespace ComputeOnDevice
     void AppMain::OnHolographicSpaceChanged(
         Windows::Graphics::Holographic::HolographicSpace^ holographicSpace)
     {
-        /*
-        _currentSlateRenderer =
-            std::make_shared<Rendering::SlateRenderer>(
-                _deviceResources);
-        _slateRendererList.push_back(_currentSlateRenderer);
-        */
-
         //
         // Initialize the HoloLens media frame readers
         //
@@ -48,11 +41,6 @@ namespace ComputeOnDevice
         Windows::Perception::Spatial::SpatialCoordinateSystem^ currentCoordinateSystem =
             _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem;
 
-        // When you get input 
-        // 1. Set the current texture to be displayed on the previous slate
-        // 2. create a new texture as the current texture
-        // 3. create a new slaterender for the new position and push it the list
-        // 4. position the new slate renderer
         if (!_isActiveRenderer)
         {
             _currentSlateRenderer =
@@ -72,8 +60,6 @@ namespace ComputeOnDevice
             // Freeze frame
             _visualizationTextureList.push_back(_currentVisualizationTexture);
             _currentVisualizationTexture = nullptr;
-            
-
             _isActiveRenderer = false;
         }
     }
@@ -243,7 +229,6 @@ namespace ComputeOnDevice
         {
             r->ReleaseDeviceDependentResources();
         }
-        //_currentSlateRenderer->ReleaseDeviceDependentResources();
 
         _holoLensMediaFrameSourceGroup = nullptr;
         _holoLensMediaFrameSourceGroupStarted = false;
@@ -263,7 +248,6 @@ namespace ComputeOnDevice
         {
             r->CreateDeviceDependentResources();
         }
-        //_currentSlateRenderer->CreateDeviceDependentResources();
 
         StartHoloLensMediaFrameSourceGroup();
     }
