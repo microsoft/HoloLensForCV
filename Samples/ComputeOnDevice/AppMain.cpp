@@ -22,16 +22,13 @@ namespace ComputeOnDevice
             HoloLensForCV::MediaFrameSourceGroupType::PhotoVideoCamera)
         , _holoLensMediaFrameSourceGroupStarted(false)
         , _undistortMapsInitialized(false)
+        , _isActiveRenderer(false)
     {
     }
 
     void AppMain::OnHolographicSpaceChanged(
         Windows::Graphics::Holographic::HolographicSpace^ holographicSpace)
     {
-        _slateRenderer =
-            std::make_unique<Rendering::SlateRenderer>(
-                _deviceResources);
-
         //
         // Initialize the HoloLens media frame readers
         //
@@ -44,10 +41,27 @@ namespace ComputeOnDevice
         Windows::Perception::Spatial::SpatialCoordinateSystem^ currentCoordinateSystem =
             _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem;
 
-        // When a Pressed gesture is detected, the sample hologram will be repositioned
-        // two meters in front of the user.
-        _slateRenderer->PositionHologram(
-            pointerState->TryGetPointerPose(currentCoordinateSystem));
+        if (!_isActiveRenderer)
+        {
+            _currentSlateRenderer =
+                std::make_shared<Rendering::SlateRenderer>(
+                    _deviceResources);
+            _slateRendererList.push_back(_currentSlateRenderer);
+
+            // When a Pressed gesture is detected, the sample hologram will be repositioned
+            // two meters in front of the user.
+            _currentSlateRenderer->PositionHologram(
+                pointerState->TryGetPointerPose(currentCoordinateSystem));
+
+            _isActiveRenderer = true;
+        }
+        else
+        {
+            // Freeze frame
+            _visualizationTextureList.push_back(_currentVisualizationTexture);
+            _currentVisualizationTexture = nullptr;
+            _isActiveRenderer = false;
+        }
     }
 
     void AppMain::OnUpdate(
@@ -67,9 +81,14 @@ namespace ComputeOnDevice
         // but if you change the StepTimer to use a fixed time step this code will
         // run as many times as needed to get to the current step.
         //
-        _slateRenderer->Update(
-            stepTimer);
-
+        
+        for (auto& r : _slateRendererList)
+        {
+            r->Update(
+                stepTimer);
+        }
+        
+        
         //
         // Process sensor data received through the HoloLensForCV component.
         //
@@ -177,7 +196,7 @@ namespace ComputeOnDevice
         OpenCVHelpers::CreateOrUpdateTexture2D(
             _deviceResources,
             _blurredPVCameraImage,
-            _visualizationTexture);
+            _currentVisualizationTexture);
     }
 
     void AppMain::OnPreRender()
@@ -189,27 +208,46 @@ namespace ComputeOnDevice
     void AppMain::OnRender()
     {
         // Draw the sample hologram.
-        _slateRenderer->Render(
-            _visualizationTexture);
+        for (size_t i = 0; i < _visualizationTextureList.size(); ++i)
+        {
+            _slateRendererList[i]->Render(
+                _visualizationTextureList[i]);
+        }
+        
+        if (_isActiveRenderer)
+        {
+            _currentSlateRenderer->Render(_currentVisualizationTexture);
+        }
     }
 
     // Notifies classes that use Direct3D device resources that the device resources
     // need to be released before this method returns.
     void AppMain::OnDeviceLost()
     {
-        _slateRenderer->ReleaseDeviceDependentResources();
+        
+        for (auto& r : _slateRendererList)
+        {
+            r->ReleaseDeviceDependentResources();
+        }
 
         _holoLensMediaFrameSourceGroup = nullptr;
         _holoLensMediaFrameSourceGroupStarted = false;
 
-        _visualizationTexture.reset();
+        for (auto& v : _visualizationTextureList)
+        {
+            v.reset();
+        }
+        _currentVisualizationTexture.reset();
     }
 
     // Notifies classes that use Direct3D device resources that the device resources
     // may now be recreated.
     void AppMain::OnDeviceRestored()
     {
-        _slateRenderer->CreateDeviceDependentResources();
+        for (auto& r : _slateRendererList)
+        {
+            r->CreateDeviceDependentResources();
+        }
 
         StartHoloLensMediaFrameSourceGroup();
     }

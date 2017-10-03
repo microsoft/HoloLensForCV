@@ -44,7 +44,8 @@ namespace ComputeOnDevice
         void StartHoloLensMediaFrameSourceGroup();
 
     private:
-        std::unique_ptr<Rendering::SlateRenderer> _slateRenderer;
+        std::vector<std::shared_ptr<Rendering::SlateRenderer> >_slateRendererList;
+        std::shared_ptr<Rendering::SlateRenderer> _currentSlateRenderer;
 
         // Selected HoloLens media frame source group
         HoloLensForCV::MediaFrameSourceGroupType _selectedHoloLensMediaFrameSourceGroupType;
@@ -65,6 +66,9 @@ namespace ComputeOnDevice
         cv::Mat _blurredPVCameraImage;
         cv::Mat _cannyPVCameraImage;
 
-        Rendering::Texture2DPtr _visualizationTexture;
+        std::vector<Rendering::Texture2DPtr> _visualizationTextureList;
+        Rendering::Texture2DPtr _currentVisualizationTexture;
+
+        bool _isActiveRenderer;
     };
 }
