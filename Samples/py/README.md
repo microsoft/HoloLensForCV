@@ -1,6 +1,6 @@
 # HoloLens Research Mode Python Receiver
 
-A basic sample which show the steps to connect to, receive and parse the HoloLens Research Mode Streamer data.
+A basic sample which show the steps to connect, receive and parse the HoloLens Research Mode Streamer data.
 
 ## Pre-requisties
 Python 2.7 on your development PC.
