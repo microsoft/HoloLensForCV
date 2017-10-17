@@ -38,7 +38,7 @@ SensorFrameStreamHeader = namedtuple('SensorFrameStreamHeader',
 PV_STREAM_PORT = 23940
 
 def main(argv):
-    """ Receiever main"""
+    """ Receiver main"""
     parser = argparse.ArgumentParser()
     required_named_group = parser.add_argument_group('named arguments')
 
