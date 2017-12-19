@@ -13,9 +13,7 @@
 
 namespace HoloLensForCV
 {
-    SensorFrameRecorder::SensorFrameRecorder(
-        _In_ SpatialPerception^ spatialPerception)
-        : _spatialPerception(spatialPerception)
+    SensorFrameRecorder::SensorFrameRecorder()
     {
     }
 

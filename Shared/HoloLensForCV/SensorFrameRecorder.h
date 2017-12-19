@@ -24,8 +24,7 @@ namespace HoloLensForCV
         : public ISensorFrameSinkGroup
     {
     public:
-        SensorFrameRecorder(
-            _In_ SpatialPerception^ spatialPerception);
+        SensorFrameRecorder();
 
         static property uint8_t RecordingVersionMajor
         {
@@ -62,8 +61,6 @@ namespace HoloLensForCV
             _Inout_ std::vector<std::wstring>& sourceFiles);
 
     private:
-        SpatialPerception^ _spatialPerception;
-
         std::mutex _recorderMutex;
 
         Windows::Storage::StorageFolder^ _archiveSourceFolder;
