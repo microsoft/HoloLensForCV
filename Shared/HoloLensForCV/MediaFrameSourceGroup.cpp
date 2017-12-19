@@ -339,8 +339,9 @@ namespace HoloLensForCV
 
 #if DBG_ENABLE_INFORMATIONAL_LOGGING
         dbg::trace(
-            L"MediaFrameSourceGroup::GetSensorType:: found sensor name '%s' in MF_MT_USER_DATA",
-            sensorName);
+            L"MediaFrameSourceGroup::GetSensorType:: found sensor name '%s' in MF_MT_USER_DATA (blob has %i bytes)",
+            sensorName,
+            sensorNameAsPlatformArray->Length);
 #endif /* DBG_ENABLE_INFORMATIONAL_LOGGING */
 
 #if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
@@ -430,8 +431,6 @@ namespace HoloLensForCV
         _mediaCapture =
             ref new Windows::Media::Capture::MediaCapture();
 
-        //
-        // 
         auto settings =
             ref new Windows::Media::Capture::MediaCaptureInitializationSettings();
 

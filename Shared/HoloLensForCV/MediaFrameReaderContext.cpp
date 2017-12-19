@@ -51,10 +51,31 @@ namespace HoloLensForCV
         Windows::Media::Capture::Frames::MediaFrameReference^ frame =
             sender->TryAcquireLatestFrame();
 
-        if (nullptr == frame ||
-            nullptr == frame->VideoMediaFrame ||
-            nullptr == frame->VideoMediaFrame->SoftwareBitmap)
+        if (nullptr == frame)
         {
+            dbg::trace(
+                L"MediaFrameReaderContext::FrameArrived: _sensorType=%s (%i), frame is null",
+                _sensorType.ToString()->Data(),
+                (int32_t)_sensorType);
+
+            return;
+        }
+        else if (nullptr == frame->VideoMediaFrame)
+        {
+            dbg::trace(
+                L"MediaFrameReaderContext::FrameArrived: _sensorType=%s (%i), frame->VideoMediaFrame is null",
+                _sensorType.ToString()->Data(),
+                (int32_t)_sensorType);
+
+            return;
+        }
+        else if (nullptr == frame->VideoMediaFrame->SoftwareBitmap)
+        {
+            dbg::trace(
+                L"MediaFrameReaderContext::FrameArrived: _sensorType=%s (%i), frame->VideoMediaFrame->SoftwareBitmap is null",
+                _sensorType.ToString()->Data(),
+                (int32_t)_sensorType);
+
             return;
         }
 
