@@ -80,9 +80,24 @@ namespace HoloLensForCV
         //
         // Attempt to obtain the rig pose at the time of exposure start.
         //
-        Windows::Perception::PerceptionTimestamp^ perceptionTimestamp =
-            _spatialPerception->CreatePerceptionTimestamp(
-                timestamp);
+        Windows::Perception::PerceptionTimestamp^ perceptionTimestamp;
+
+        try
+        {
+            perceptionTimestamp =
+                Windows::Perception::PerceptionTimestampHelper::FromHistoricalTargetTime(
+                    timestamp);
+        }
+        catch (Platform::Exception^ exception)
+        {
+#if DBG_ENABLE_ERROR_LOGGING
+            dbg::trace(
+                L"MediaFrameReaderContext::FrameArrived: PerceptionTimestampHelper::FromHistoricalTargetTime call failed: %s",
+                exception->Message->Data());
+#endif /* DBG_ENABLE_ERROR_LOGGING */
+
+            return;
+        }
 
         //
         // Create a copy of the software bitmap and wrap it up with a SensorFrame.
