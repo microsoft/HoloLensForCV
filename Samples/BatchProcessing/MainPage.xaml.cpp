@@ -157,7 +157,7 @@ namespace BatchProcessing
                 uint32_t imageBufferDataLength = 0;
 
                 uint8_t* imageBufferData =
-                    Io::GetPointerToMemoryBuffer(
+                    Io::GetTypedPointerToMemoryBuffer<uint8_t>(
                         imageBufferReference,
                         imageBufferDataLength);
 

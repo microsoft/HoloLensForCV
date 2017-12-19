@@ -173,7 +173,7 @@ namespace Recorder
             uint32_t pixelBufferDataLength = 0;
 
             uint8_t* pixelBufferData =
-                Io::GetPointerToMemoryBuffer(
+                Io::GetTypedPointerToMemoryBuffer<uint8_t>(
                     bitmapBuffer->CreateReference(),
                     pixelBufferDataLength);
 
@@ -498,8 +498,7 @@ namespace Recorder
             nullptr != _spatialPerception);
 
         _sensorFrameRecorder =
-            ref new HoloLensForCV::SensorFrameRecorder(
-                _spatialPerception);
+            ref new HoloLensForCV::SensorFrameRecorder();
 
         _sensorFrameRecorder->Enable(
             HoloLensForCV::SensorType::PhotoVideo);
