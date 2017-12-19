@@ -368,6 +368,14 @@ namespace HoloLensForCV
         {
             return SensorType::ShortThrowToFReflectivity;
         }
+        if (0 == wcscmp(sensorName, L"Long Throw ToF Depth"))
+        {
+            return SensorType::LongThrowToFDepth;
+        }
+        else if (0 == wcscmp(sensorName, L"Long Throw ToF Reflectivity"))
+        {
+            return SensorType::LongThrowToFReflectivity;
+        }
         else if (0 == wcscmp(sensorName, L"Visible Light Left-Left"))
         {
             return SensorType::VisibleLightLeftLeft;

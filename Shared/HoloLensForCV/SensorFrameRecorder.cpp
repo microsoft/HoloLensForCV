@@ -341,6 +341,12 @@ namespace HoloLensForCV
         case SensorType::ShortThrowToFReflectivity:
             return L"short_throw_reflectivity";
 
+        case SensorType::LongThrowToFDepth:
+            return L"long_throw_depth";
+
+        case SensorType::LongThrowToFReflectivity:
+            return L"long_throw_reflectivity";
+
         case SensorType::VisibleLightLeftLeft:
             return L"vlc_ll";
 
