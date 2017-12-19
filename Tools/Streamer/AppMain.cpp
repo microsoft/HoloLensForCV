@@ -28,8 +28,13 @@ namespace Streamer
     // Loads and initializes application assets when the application is loaded.
     AppMain::AppMain(const std::shared_ptr<Graphics::DeviceResources>& deviceResources)
         : Holographic::AppMainBase(deviceResources)
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+        , _selectedHoloLensMediaFrameSourceGroupType(
+            HoloLensForCV::MediaFrameSourceGroupType::HoloLensResearchModeSensors)
+#else
         , _selectedHoloLensMediaFrameSourceGroupType(
             HoloLensForCV::MediaFrameSourceGroupType::PhotoVideoCamera)
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
         , _holoLensMediaFrameSourceGroupStarted(false)
     {
     }
@@ -86,9 +91,45 @@ namespace Streamer
             return;
         }
 
-        HoloLensForCV::SensorFrame^ latestCameraPreviewFrame =
-            _holoLensMediaFrameSourceGroup->GetLatestSensorFrame(
-                HoloLensForCV::SensorType::PhotoVideo);
+        HoloLensForCV::SensorFrame^ latestCameraPreviewFrame;
+        Windows::Graphics::Imaging::BitmapPixelFormat cameraPreviewExpectedBitmapPixelFormat;
+        DXGI_FORMAT cameraPreviewTextureFormat;
+        int32_t cameraPreviewPixelStride;
+
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+        if (HoloLensForCV::MediaFrameSourceGroupType::PhotoVideoCamera == _selectedHoloLensMediaFrameSourceGroupType)
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
+        {
+            latestCameraPreviewFrame =
+                _holoLensMediaFrameSourceGroup->GetLatestSensorFrame(
+                    HoloLensForCV::SensorType::PhotoVideo);
+
+            cameraPreviewExpectedBitmapPixelFormat =
+                Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8;
+
+            cameraPreviewTextureFormat =
+                DXGI_FORMAT_B8G8R8A8_UNORM;
+
+            cameraPreviewPixelStride =
+                4;
+        }
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+        else
+        {
+            latestCameraPreviewFrame =
+                _holoLensMediaFrameSourceGroup->GetLatestSensorFrame(
+                    HoloLensForCV::SensorType::LongThrowToFReflectivity);
+
+            cameraPreviewExpectedBitmapPixelFormat =
+                Windows::Graphics::Imaging::BitmapPixelFormat::Gray8;
+
+            cameraPreviewTextureFormat =
+                DXGI_FORMAT_R8_UNORM;
+
+            cameraPreviewPixelStride =
+                1;
+        }
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
 
         if (nullptr == latestCameraPreviewFrame)
         {
@@ -104,12 +145,18 @@ namespace Streamer
 
         if (nullptr == _cameraPreviewTexture)
         {
+#if 0
+            dbg::trace(
+                L"latestCameraPreviewFrame->SoftwareBitmap->PixelWidth=0x%08x, latestCameraPreviewFrame->SoftwareBitmap->PixelHeight=0x%08x",
+                latestCameraPreviewFrame->SoftwareBitmap->PixelWidth, latestCameraPreviewFrame->SoftwareBitmap->PixelHeight);
+#endif
+
             _cameraPreviewTexture =
                 std::make_shared<Rendering::Texture2D>(
                     _deviceResources,
                     latestCameraPreviewFrame->SoftwareBitmap->PixelWidth,
                     latestCameraPreviewFrame->SoftwareBitmap->PixelHeight,
-                    DXGI_FORMAT_B8G8R8A8_UNORM);
+                    cameraPreviewTextureFormat);
         }
 
         {
@@ -120,7 +167,13 @@ namespace Streamer
             Windows::Graphics::Imaging::SoftwareBitmap^ bitmap =
                 latestCameraPreviewFrame->SoftwareBitmap;
 
-            REQUIRES(Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8 == bitmap->BitmapPixelFormat);
+#if 0
+            dbg::trace(
+                L"cameraPreviewExpectedBitmapPixelFormat=0x%08x, bitmap->BitmapPixelFormat=0x%08x",
+                cameraPreviewExpectedBitmapPixelFormat, bitmap->BitmapPixelFormat);
+#endif
+
+            REQUIRES(cameraPreviewExpectedBitmapPixelFormat == bitmap->BitmapPixelFormat);
 
             Windows::Graphics::Imaging::BitmapBuffer^ bitmapBuffer =
                 bitmap->LockBuffer(
@@ -134,15 +187,15 @@ namespace Streamer
                     pixelBufferDataLength);
 
             const int32_t bytesToCopy =
-                _cameraPreviewTexture->GetWidth() * _cameraPreviewTexture->GetHeight() * 4;
+                _cameraPreviewTexture->GetWidth() * _cameraPreviewTexture->GetHeight() * cameraPreviewPixelStride;
 
             ASSERT(static_cast<uint32_t>(bytesToCopy) == pixelBufferDataLength);
 
-            memcpy_s(
+            ASSERT(0 == memcpy_s(
                 mappedTexture,
                 bytesToCopy,
                 pixelBufferData,
-                pixelBufferDataLength);
+                pixelBufferDataLength));
 
             _cameraPreviewTexture->UnmapCPUTexture();
         }
@@ -189,8 +242,13 @@ namespace Streamer
         _sensorFrameStreamer =
             ref new HoloLensForCV::SensorFrameStreamer();
 
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+        _sensorFrameStreamer->Enable(
+            HoloLensForCV::SensorType::LongThrowToFReflectivity);
+#else
         _sensorFrameStreamer->Enable(
             HoloLensForCV::SensorType::PhotoVideo);
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
 
         _holoLensMediaFrameSourceGroup =
             ref new HoloLensForCV::MediaFrameSourceGroup(
