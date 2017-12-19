@@ -60,12 +60,10 @@ namespace HoloLensForCV
 
 #if DBG_ENABLE_VERBOSE_LOGGING
         dbg::trace(
-            L"MediaFrameReaderContext::FrameArrived: _sensorType=%s (%i), timestamp=%llu (relative) and %llu (absolute)",
+            L"MediaFrameReaderContext::FrameArrived: _sensorType=%s (%i), timestamp=%llu (relative)",
             _sensorType.ToString()->Data(),
             (int32_t)_sensorType,
-            frame->SystemRelativeTime->Value.Duration,
-            _timeConverter.RelativeTicksToAbsoluteTicks(
-                frame->SystemRelativeTime->Value.Duration));
+            frame->SystemRelativeTime->Value.Duration);
 #endif
 
         //
@@ -76,7 +74,8 @@ namespace HoloLensForCV
 
         timestamp.UniversalTime =
             _timeConverter.RelativeTicksToAbsoluteTicks(
-                frame->SystemRelativeTime->Value.Duration);
+                Io::HundredsOfNanoseconds(
+                    frame->SystemRelativeTime->Value.Duration)).count();
 
         //
         // Attempt to obtain the rig pose at the time of exposure start.

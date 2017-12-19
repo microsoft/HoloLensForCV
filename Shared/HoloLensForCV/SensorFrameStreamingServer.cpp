@@ -134,7 +134,7 @@ namespace HoloLensForCV
             uint32_t bitmapBufferDataSize = 0;
 
             uint8_t* bitmapBufferData =
-                Io::GetPointerToMemoryBuffer(
+                Io::GetTypedPointerToMemoryBuffer<uint8_t>(
                     bitmapBufferReference,
                     bitmapBufferDataSize);
 
