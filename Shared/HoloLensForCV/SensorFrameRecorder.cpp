@@ -31,6 +31,8 @@ namespace HoloLensForCV
 #if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
         Enable(SensorType::ShortThrowToFDepth);
         Enable(SensorType::ShortThrowToFReflectivity);
+        Enable(SensorType::LongThrowToFDepth);
+        Enable(SensorType::LongThrowToFReflectivity);
         Enable(SensorType::VisibleLightLeftLeft);
         Enable(SensorType::VisibleLightLeftFront);
         Enable(SensorType::VisibleLightRightFront);

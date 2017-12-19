@@ -15,6 +15,9 @@ namespace HoloLensForCV
 {
     public enum class MediaFrameSourceGroupType
     {
-        PhotoVideoCamera
+        PhotoVideoCamera,
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+        HoloLensResearchModeSensors,
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
     };
 }

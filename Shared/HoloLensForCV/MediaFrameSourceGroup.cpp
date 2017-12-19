@@ -86,6 +86,21 @@ namespace HoloLensForCV
 
                     break;
                 }
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+                else if (MediaFrameSourceGroupType::HoloLensResearchModeSensors == _mediaFrameSourceGroupType)
+                {
+#if DBG_ENABLE_INFORMATIONAL_LOGGING
+                    dbg::trace(
+                        L"MediaFrameSourceGroup::InitializeMediaSourceWorkerAsync: assuming '%s' is the HoloLens Sensor Streaming media frame source group.",
+                        sourceGroupDisplayName);
+#endif /* DBG_ENABLE_INFORMATIONAL_LOGGING */
+
+                    selectedSourceGroup =
+                        sourceGroup;
+
+                    break;
+                }
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
             }
 
             if (nullptr == selectedSourceGroup)
@@ -405,6 +420,76 @@ namespace HoloLensForCV
             // For color sources, we accept anything and request that it be converted to Bgra8.
             //
             return Windows::Media::MediaProperties::MediaEncodingSubtypes::Bgra8;
+
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+        case Windows::Media::Capture::Frames::MediaFrameSourceKind::Depth:
+        {
+            if (MediaFrameSourceGroupType::HoloLensResearchModeSensors == _mediaFrameSourceGroupType)
+            {
+                //
+                // The only depth format we can render is D16.
+                //
+                dbg::trace(
+                    L"MediaFrameSourceGroup::GetSubtypeForFrameReader: evaluating MediaFrameSourceKind::Depth with format %s-%s @%i/%iHz",
+                    format->MajorType->Data(),
+                    format->Subtype->Data(),
+                    format->FrameRate->Numerator,
+                    format->FrameRate->Denominator);
+
+                const bool isD16 =
+                    CompareStringOrdinal(
+                        format->Subtype->Data(),
+                        -1 /* cchCount1 */,
+                        Windows::Media::MediaProperties::MediaEncodingSubtypes::D16->Data(),
+                        -1 /* cchCount2 */,
+                        TRUE /* bIgnoreCase */) == CSTR_EQUAL;
+
+                return isD16 ? format->Subtype : nullptr;
+            }
+            else
+            {
+                return nullptr;
+            }
+        }
+
+        case Windows::Media::Capture::Frames::MediaFrameSourceKind::Infrared:
+        {
+            if (MediaFrameSourceGroupType::HoloLensResearchModeSensors == _mediaFrameSourceGroupType)
+            {
+                //
+                // The only infrared formats we can render are L8 and L16.
+                //
+                dbg::trace(
+                    L"MediaFrameSourceGroup::GetSubtypeForFrameReader: evaluating MediaFrameSourceKind::Infrared with format %s-%s @%i/%iHz",
+                    format->MajorType->Data(),
+                    format->Subtype->Data(),
+                    format->FrameRate->Numerator,
+                    format->FrameRate->Denominator);
+
+                const bool isL8 =
+                    CompareStringOrdinal(
+                        format->Subtype->Data(),
+                        -1 /* cchCount1 */,
+                        Windows::Media::MediaProperties::MediaEncodingSubtypes::L8->Data(),
+                        -1 /* cchCount2 */,
+                        TRUE /* bIgnoreCase */) == CSTR_EQUAL;
+
+                const bool isL16 =
+                    CompareStringOrdinal(
+                        format->Subtype->Data(),
+                        -1 /* cchCount1 */,
+                        Windows::Media::MediaProperties::MediaEncodingSubtypes::L16->Data(),
+                        -1 /* cchCount2 */,
+                        TRUE /* bIgnoreCase */) == CSTR_EQUAL;
+
+                return (isL8 || isL16) ? format->Subtype : nullptr;
+            }
+            else
+            {
+                return nullptr;
+            }
+        }
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
 
         default:
             //

@@ -23,6 +23,8 @@ namespace HoloLensForCV
 #if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
         ShortThrowToFDepth,
         ShortThrowToFReflectivity,
+        LongThrowToFDepth,
+        LongThrowToFReflectivity,
         VisibleLightLeftLeft,
         VisibleLightLeftFront,
         VisibleLightRightFront,
