@@ -9,13 +9,17 @@
 //
 //*********************************************************
 
-#pragma once
+#include "pch.h"
 
-#include <Io/Time.h>
-#include <Io/TimeConverter.h>
-#include <Io/Timer.h>
-#include <Io/StorageHandleAccess.h>
-#include <Io/Tar.h>
-#include <Io/BufferHelpers.h>
-#include <Io/StringHelpers.h>
-#include <Io/IoHelpers.h>
+namespace Io
+{
+    HundredsOfNanoseconds UniversalToUnixTime(
+        _In_ const FILETIME fileTime)
+    {
+        const std::chrono::seconds c_unix_epoch(
+            11'644'473'600);
+
+        return HundredsOfNanoseconds(
+            fileTime.dwLowDateTime + (static_cast<uint64_t>(fileTime.dwHighDateTime) << 32)) - c_unix_epoch;
+    }
+}

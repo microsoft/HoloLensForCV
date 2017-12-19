@@ -27,6 +27,7 @@
 #include <Windows.h>
 #include <ppltasks.h>
 #include <memorybuffer.h>
+#include <robuffer.h>
 
 #include <Debugging/All.h>
 #include <Io/All.h>
