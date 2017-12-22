@@ -148,11 +148,21 @@ namespace HoloLensForCV
         // Extract the frame-to-origin transform, if the MFT exposed it:
         //
         bool frameToOriginObtained = false;
+        static const Platform::Guid c_MFSampleExtension_Spatial_CameraCoordinateSystem(0x9d13c82f, 0x2199, 0x4e67, 0x91, 0xcd, 0xd1, 0xa4, 0x18, 0x1f, 0x25, 0x34);
 
-        if (nullptr != frame->CoordinateSystem)
+        Windows::Perception::Spatial::SpatialCoordinateSystem^ frameCoordinateSystem = nullptr;
+        
+        if (frame->Properties->HasKey(c_MFSampleExtension_Spatial_CameraCoordinateSystem))
+        {
+            frameCoordinateSystem = safe_cast<Windows::Perception::Spatial::SpatialCoordinateSystem^>(
+                frame->Properties->Lookup(
+                    c_MFSampleExtension_Spatial_CameraCoordinateSystem));
+        }
+
+        if (nullptr != frameCoordinateSystem)
         {
             Platform::IBox<Windows::Foundation::Numerics::float4x4>^ frameToOriginReference =
-                frame->CoordinateSystem->TryGetTransformTo(
+                frameCoordinateSystem->TryGetTransformTo(
                     _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem);
 
             if (nullptr != frameToOriginReference)

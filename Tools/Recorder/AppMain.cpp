@@ -12,6 +12,8 @@
 #include "pch.h"
 #include "AppMain.h"
 
+//#define RECORDER_USE_SPEECH
+
 using namespace Windows::Foundation;
 using namespace Windows::Foundation::Numerics;
 using namespace Windows::Networking;
@@ -26,8 +28,8 @@ namespace Recorder
 {
     AppMain::AppMain(const std::shared_ptr<Graphics::DeviceResources>& deviceResources)
         : Holographic::AppMainBase(deviceResources)
-        , _lastVoiceCommand(nullptr)
-        , _photoVideoMediaFrameSourceGroupStarted(false)
+        , _lastCommand(nullptr)
+        , _mediaFrameSourceGroupStarted(false)
         , _sensorFrameRecorderStarted(false)
         , _cameraPreviewTimestamp()
     {
@@ -53,10 +55,12 @@ namespace Recorder
         //
         BeginVoiceUIPrompt();
 
+#ifdef RECORDER_USE_SPEECH
         //
         // Start the speech recognizer.
         //
         StartRecognizeSpeechCommands();
+#endif
     }
 
     void AppMain::OnSpatialInput(
@@ -69,6 +73,16 @@ namespace Recorder
         // two meters in front of the user.
         _slateRenderer->PositionHologram(
             pointerState->TryGetPointerPose(currentCoordinateSystem));
+
+#ifndef  RECORDER_USE_SPEECH
+        if (_mediaFrameSourceGroupStarted)
+        {
+            _lastCommand = (_sensorFrameRecorderStarted) ? L"stop" : L"start";
+            // Play a sound to indicate a command was understood.
+            PlayVoiceCommandRecognitionSound();
+        }
+#endif // ! RECORDER_USE_SPEECH
+
     }
 
     // Updates the application state once per frame.
@@ -95,7 +109,7 @@ namespace Recorder
         //
         // Check for the voice commands.
         //
-        if (_lastVoiceCommand == L"start")
+        if (_lastCommand == L"start")
         {
             if (!_sensorFrameRecorderStarted)
             {
@@ -110,7 +124,7 @@ namespace Recorder
                 });
             }
         }
-        else if (_lastVoiceCommand == L"stop")
+        else if (_lastCommand == L"stop")
         {
             if (_sensorFrameRecorderStarted)
             {
@@ -120,19 +134,19 @@ namespace Recorder
             }
         }
 
-        _lastVoiceCommand = nullptr;
+        _lastCommand = nullptr;
 
         //
         // Process sensor data received through the HoloLensForCV component.
         //
-        if (!_photoVideoMediaFrameSourceGroupStarted)
+        if (!_mediaFrameSourceGroupStarted)
         {
             return;
         }
-
+#if 0
         HoloLensForCV::SensorFrame^ latestCameraPreviewFrame =
-            _photoVideoMediaFrameSourceGroup->GetLatestSensorFrame(
-                HoloLensForCV::SensorType::PhotoVideo);
+            _mediaFrameSourceGroup->GetLatestSensorFrame(
+                HoloLensForCV::SensorType::ShortThrowToFReflectivity);
 
         if (nullptr == latestCameraPreviewFrame)
         {
@@ -192,6 +206,7 @@ namespace Recorder
         }
 
         _cameraPreviewTexture->CopyCPU2GPU();
+#endif
     }
 
     void AppMain::OnPreRender()
@@ -213,8 +228,8 @@ namespace Recorder
     {
         _slateRenderer->ReleaseDeviceDependentResources();
 
-        _photoVideoMediaFrameSourceGroup = nullptr;
-        _photoVideoMediaFrameSourceGroupStarted = false;
+        _mediaFrameSourceGroup = nullptr;
+        _mediaFrameSourceGroupStarted = false;
 
         _sensorFrameRecorder = nullptr;
         _sensorFrameRecorderStarted = false;
@@ -237,8 +252,13 @@ namespace Recorder
         auto speechSynthesizer =
             ref new Windows::Media::SpeechSynthesis::SpeechSynthesizer();
 
+#ifdef RECORDER_USE_SPEECH
         Platform::StringReference voicePrompt =
             L"Say 'start' to begin, and 'stop' to end recording.";
+#else
+        Platform::StringReference voicePrompt =
+            L"Air tap to begin and end recording";
+#endif
 
         concurrency::create_task(
             speechSynthesizer->SynthesizeTextToStreamAsync(voicePrompt),
@@ -417,7 +437,7 @@ namespace Recorder
         if ((args->Result->Confidence == Windows::Media::SpeechRecognition::SpeechRecognitionConfidence::High) ||
             (args->Result->Confidence == Windows::Media::SpeechRecognition::SpeechRecognitionConfidence::Medium))
         {
-            _lastVoiceCommand =
+            _lastCommand =
                 args->Result->Text;
 
             // When the debugger is attached, we can print information to the debug console.
@@ -493,30 +513,31 @@ namespace Recorder
     void AppMain::StartHoloLensMediaFrameSourceGroup()
     {
         REQUIRES(
-            !_photoVideoMediaFrameSourceGroupStarted &&
+            !_mediaFrameSourceGroupStarted &&
             !_sensorFrameRecorderStarted &&
             nullptr != _spatialPerception);
 
         _sensorFrameRecorder =
             ref new HoloLensForCV::SensorFrameRecorder();
 
-        _sensorFrameRecorder->Enable(
-            HoloLensForCV::SensorType::PhotoVideo);
+        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::ShortThrowToFDepth);
+        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::ShortThrowToFReflectivity);
+        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::VisibleLightLeftFront);
 
-        _photoVideoMediaFrameSourceGroup =
+        _mediaFrameSourceGroup =
             ref new HoloLensForCV::MediaFrameSourceGroup(
-                HoloLensForCV::MediaFrameSourceGroupType::PhotoVideoCamera,
+                HoloLensForCV::MediaFrameSourceGroupType::HoloLensResearchModeSensors,
                 _spatialPerception,
                 _sensorFrameRecorder);
 
-        auto photoVideoStartAsyncTask =
+        auto captureSartAsyncTask =
             concurrency::create_task(
-                _photoVideoMediaFrameSourceGroup->StartAsync());
+                _mediaFrameSourceGroup->StartAsync());
 
-        photoVideoStartAsyncTask.then(
+        captureSartAsyncTask.then(
             [&]()
         {
-            _photoVideoMediaFrameSourceGroupStarted = true;
+            _mediaFrameSourceGroupStarted = true;
         });
     }
 }

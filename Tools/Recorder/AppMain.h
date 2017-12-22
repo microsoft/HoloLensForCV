@@ -79,14 +79,14 @@ namespace Recorder
         Windows::Foundation::EventRegistrationToken _speechRecognizerResultEventToken;
         Windows::Foundation::EventRegistrationToken _speechRecognitionQualityDegradedToken;
 
-        Platform::String^ _lastVoiceCommand;
+        Platform::String^ _lastCommand;
 
         //
         // HoloLens media frame source groups -- one for the HoloLens Research Mode
         // sensor streaming support and one for the HoloLens Photo-Video camera.
         //
-        HoloLensForCV::MediaFrameSourceGroup^ _photoVideoMediaFrameSourceGroup;
-        bool _photoVideoMediaFrameSourceGroupStarted;
+        HoloLensForCV::MediaFrameSourceGroup^ _mediaFrameSourceGroup;
+        bool _mediaFrameSourceGroupStarted;
 
         HoloLensForCV::SensorFrameRecorder^ _sensorFrameRecorder;
         bool _sensorFrameRecorderStarted;
