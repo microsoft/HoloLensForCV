@@ -14,8 +14,9 @@
 namespace HoloLensForCV
 {
     SensorFrameRecorderSink::SensorFrameRecorderSink(
+        _In_ SensorType sensorType,
         _In_ Platform::String^ sensorName)
-        : _sensorName(sensorName)
+        : _sensorType(sensorType), _sensorName(sensorName)
     {
     }
 
@@ -95,7 +96,7 @@ namespace HoloLensForCV
         return _sensorName;
     }
 
-    Windows::Media::Devices::Core::CameraIntrinsics^ SensorFrameRecorderSink::GetCameraIntrinsics()
+    CameraIntrinsics^ SensorFrameRecorderSink::GetCameraIntrinsics()
     {
         return _cameraIntrinsics;
     }
@@ -152,7 +153,7 @@ namespace HoloLensForCV
 
         sprintf_s(
             absolutePath,
-            "%S\\%020llu_%S.raw",
+            "%S\\%020llu_%S.pgm",
             _archiveSourceFolder->Path->Data(),
             sensorFrame->Timestamp.UniversalTime,
             _sensorName->Data());
@@ -170,6 +171,60 @@ namespace HoloLensForCV
             FILE* file = nullptr;
 
             ASSERT(0 == fopen_s(&file, absolutePath, "wb"));
+
+            int maxValue = 0;
+            int actualPixelWidth = softwareBitmap->PixelWidth;
+            switch (softwareBitmap->BitmapPixelFormat)
+            {
+
+            case Windows::Graphics::Imaging::BitmapPixelFormat::Gray16:
+                maxValue = 65535;
+                break;
+
+            case Windows::Graphics::Imaging::BitmapPixelFormat::Gray8:
+                maxValue = 255;
+                break;
+
+            case Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8:
+                if ((_sensorType == SensorType::VisibleLightLeftFront) ||
+                    (_sensorType == SensorType::VisibleLightLeftLeft) ||
+                    (_sensorType == SensorType::VisibleLightRightFront) ||
+                    (_sensorType == SensorType::VisibleLightRightRight))
+                {
+                    maxValue = 255;
+                    actualPixelWidth = actualPixelWidth * 4;
+                }
+                else
+                {
+                    ASSERT(false);
+                }
+
+                break;
+
+            default:
+                // Unsupported by PGM format. Need to update save logic
+#if DBG_ENABLE_INFORMATIONAL_LOGGING
+                dbg::trace(
+                    L"SensorFrameRecorderSink::Send: unsupported bitmap pixel format for PGM");
+#endif /* DBG_ENABLE_INFORMATIONAL_LOGGING */
+
+                ASSERT(false);
+                break;
+            }
+
+            // Write Header 
+            std::stringstream header;
+            header << "P5\n"
+                << actualPixelWidth << " "
+                << softwareBitmap->PixelHeight << "\n"
+                << maxValue << "\n";
+
+            std::string headerString = header.str();
+            ASSERT(headerString.size() == fwrite(
+                headerString.c_str(),
+                sizeof(uint8_t) /* _ElementSize */,
+                headerString.size() /* _ElementCount */,
+                file));
 
             Windows::Graphics::Imaging::BitmapBuffer^ bitmapBuffer =
                 softwareBitmap->LockBuffer(

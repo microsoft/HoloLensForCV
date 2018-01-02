@@ -120,7 +120,8 @@ namespace ComputeOnDevice
         rmcv::WrapHoloLensSensorFrameWithCvMat(
             latestFrame,
             wrappedImage);
-
+            //TODO: Handle Instrinsics for PV and RM cameras
+#if 0
         if (!_undistortMapsInitialized)
         {
             Windows::Media::Devices::Core::CameraIntrinsics^ cameraIntrinsics =
@@ -155,7 +156,7 @@ namespace ComputeOnDevice
 
             _undistortMapsInitialized = true;
         }
-
+#endif
         cv::remap(
             wrappedImage,
             _undistortedPVCameraImage,

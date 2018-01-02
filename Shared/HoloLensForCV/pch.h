@@ -31,6 +31,7 @@
 #include <windowsnumerics.h>
 #include <windows.foundation.h>
 #include <windows.foundation.collections.h>
+#include <windows.foundation.numerics.h>
 
 #include <DirectXMath.h>
 
@@ -42,6 +43,9 @@
 #include <Io/All.h>
 
 #include "CsvWriter.h"
+
+#include "ICameraIntrinsics.h"
+#include "CameraIntrinsics.h"
 
 #include "SpatialPerception.h"
 

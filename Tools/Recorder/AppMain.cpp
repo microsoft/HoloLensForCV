@@ -13,6 +13,7 @@
 #include "AppMain.h"
 
 //#define RECORDER_USE_SPEECH
+//#define ENABLE_RENDERING
 
 using namespace Windows::Foundation;
 using namespace Windows::Foundation::Numerics;
@@ -32,6 +33,7 @@ namespace Recorder
         , _mediaFrameSourceGroupStarted(false)
         , _sensorFrameRecorderStarted(false)
         , _cameraPreviewTimestamp()
+        , _maxTimeToRecordInSeconds(10)
     {
     }
 
@@ -69,10 +71,12 @@ namespace Recorder
         Windows::Perception::Spatial::SpatialCoordinateSystem^ currentCoordinateSystem =
             _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem;
 
+#ifdef ENABLE_RENDERING
         // When a Pressed gesture is detected, the sample hologram will be repositioned
         // two meters in front of the user.
         _slateRenderer->PositionHologram(
             pointerState->TryGetPointerPose(currentCoordinateSystem));
+#endif 
 
 #ifndef  RECORDER_USE_SPEECH
         if (_mediaFrameSourceGroupStarted)
@@ -96,6 +100,7 @@ namespace Recorder
             L"AppMain::OnUpdate",
             30.0 /* minimum_time_elapsed_in_milliseconds */);
 
+#ifdef ENABLE_RENDERING
         //
         // Update scene objects.
         //
@@ -105,6 +110,20 @@ namespace Recorder
         //
         _slateRenderer->Update(
             stepTimer);
+#else
+        UNREFERENCED_PARAMETER(stepTimer);
+#endif
+
+        // Check for timer elapse
+        if (_sensorFrameRecorderStarted && (_maxTimeToRecordInSeconds != 0))
+        {
+            unsigned int elapsedTime = (int)(_recordTimer.GetMillisecondsFromStart() / 1000.0);
+            if (elapsedTime >= _maxTimeToRecordInSeconds)
+            {
+                _lastCommand = L"stop";
+            }
+        }
+
 
         //
         // Check for the voice commands.
@@ -121,6 +140,9 @@ namespace Recorder
                     [&]()
                 {
                     _sensorFrameRecorderStarted = true;
+
+                    // Start timer
+                    _recordTimer.Reset();
                 });
             }
         }
@@ -143,6 +165,8 @@ namespace Recorder
         {
             return;
         }
+
+// TODO: Enable camera preview based on sensor selection
 #if 0
         HoloLensForCV::SensorFrame^ latestCameraPreviewFrame =
             _mediaFrameSourceGroup->GetLatestSensorFrame(
@@ -217,17 +241,20 @@ namespace Recorder
     // current application and spatial positioning state.
     void AppMain::OnRender()
     {
+#ifdef ENABLE_RENDERING
         // Draw the sample hologram.
         _slateRenderer->Render(
             _cameraPreviewTexture);
+#endif
     }
 
     // Notifies classes that use Direct3D device resources that the device resources
     // need to be released before this method returns.
     void AppMain::OnDeviceLost()
     {
+#ifdef ENABLE_RENDERING
         _slateRenderer->ReleaseDeviceDependentResources();
-
+#endif
         _mediaFrameSourceGroup = nullptr;
         _mediaFrameSourceGroupStarted = false;
 
@@ -242,7 +269,9 @@ namespace Recorder
     // may now be recreated.
     void AppMain::OnDeviceRestored()
     {
+#ifdef ENABLE_RENDERING
         _slateRenderer->CreateDeviceDependentResources();
+#endif
 
         StartHoloLensMediaFrameSourceGroup();
     }

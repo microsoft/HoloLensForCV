@@ -28,7 +28,7 @@ namespace HoloLensForCV
         property Windows::Foundation::DateTime Timestamp;
         property Windows::Graphics::Imaging::SoftwareBitmap^ SoftwareBitmap;
 
-        property Windows::Media::Devices::Core::CameraIntrinsics^ CameraIntrinsics;
+        property CameraIntrinsics^ CameraIntrinsics;
         property Windows::Foundation::Numerics::float4x4 FrameToOrigin;
     };
 }

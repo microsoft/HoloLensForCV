@@ -95,5 +95,9 @@ namespace Recorder
         std::unique_ptr<Rendering::SlateRenderer> _slateRenderer;
         Rendering::Texture2DPtr _cameraPreviewTexture;
         Windows::Foundation::DateTime _cameraPreviewTimestamp;
+
+        // Default is 0. 0 is equivalent to manual stop mode.
+        unsigned int _maxTimeToRecordInSeconds;
+        dbg::Timer _recordTimer;
     };
 }

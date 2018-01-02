@@ -206,8 +206,29 @@ namespace HoloLensForCV
         //
         // Hold a reference to the camera intrinsics.
         //
-        sensorFrame->CameraIntrinsics =
-            frame->VideoMediaFrame->CameraIntrinsics;
+        Windows::Media::Devices::Core::CameraIntrinsics^ ci = frame->VideoMediaFrame->CameraIntrinsics;
+        if (frame->Properties->HasKey(SensorStreaming::MFSampleExtension_SensorStreaming_CameraIntrinsics))
+        {
+            Microsoft::WRL::ComPtr<SensorStreaming::ICameraIntrinsics> cameraIntrinsics = reinterpret_cast<SensorStreaming::ICameraIntrinsics*>(
+                frame->Properties->Lookup(
+                    SensorStreaming::MFSampleExtension_SensorStreaming_CameraIntrinsics));
+
+            
+            // Get the unpacked width VLC
+            unsigned int imageWidth = softwareBitmap->PixelWidth;
+
+            if ((_sensorType == SensorType::VisibleLightLeftFront) ||
+                (_sensorType == SensorType::VisibleLightLeftLeft) ||
+                (_sensorType == SensorType::VisibleLightRightFront) ||
+                (_sensorType == SensorType::VisibleLightRightRight))
+            {
+                imageWidth = imageWidth * 4;
+            }
+
+            sensorFrame->CameraIntrinsics = ref new CameraIntrinsics(cameraIntrinsics, 
+                                                                      imageWidth,
+                                                                      softwareBitmap->PixelHeight);
+        }
 
         if (nullptr != _sensorFrameSink)
         {
