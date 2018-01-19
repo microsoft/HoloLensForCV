@@ -80,6 +80,7 @@ namespace Recorder
         Windows::Foundation::EventRegistrationToken _speechRecognitionQualityDegradedToken;
 
         Platform::String^ _lastCommand;
+        std::mutex _lastCommandMutex;
 
         //
         // HoloLens media frame source groups -- one for the HoloLens Research Mode

@@ -81,7 +81,10 @@ namespace Recorder
 #ifndef  RECORDER_USE_SPEECH
         if (_mediaFrameSourceGroupStarted)
         {
-            _lastCommand = (_sensorFrameRecorderStarted) ? L"stop" : L"start";
+            {
+                std::unique_lock<std::mutex> lastCommandLock(_lastCommandMutex);
+                _lastCommand = (_sensorFrameRecorderStarted) ? L"stop" : L"start";
+            }
             // Play a sound to indicate a command was understood.
             PlayVoiceCommandRecognitionSound();
         }
@@ -120,7 +123,26 @@ namespace Recorder
             unsigned int elapsedTime = (int)(_recordTimer.GetMillisecondsFromStart() / 1000.0);
             if (elapsedTime >= _maxTimeToRecordInSeconds)
             {
+                std::unique_lock<std::mutex> lastCommandLock(_lastCommandMutex);
                 _lastCommand = L"stop";
+            }
+        }
+
+        enum class Command {
+              START, STOP, UNKOWN
+        };
+
+        Command command;
+        {
+            std::unique_lock<std::mutex> lastCommandLock(_lastCommandMutex);
+            if (_lastCommand == L"start") {
+                command = Command::START;
+            }
+            else if (_lastCommand == L"stop") {
+                command = Command::STOP;
+            }
+            else {
+                command = Command::UNKOWN;
             }
         }
 
@@ -128,7 +150,7 @@ namespace Recorder
         //
         // Check for the voice commands.
         //
-        if (_lastCommand == L"start")
+        if (command == Command::START)
         {
             if (!_sensorFrameRecorderStarted)
             {
@@ -146,7 +168,7 @@ namespace Recorder
                 });
             }
         }
-        else if (_lastCommand == L"stop")
+        else if (command == Command::STOP)
         {
             if (_sensorFrameRecorderStarted)
             {
@@ -156,7 +178,10 @@ namespace Recorder
             }
         }
 
-        _lastCommand = nullptr;
+        {
+            std::unique_lock<std::mutex> lastCommandLock(_lastCommandMutex);
+            _lastCommand = nullptr;
+        }
 
         //
         // Process sensor data received through the HoloLensForCV component.
@@ -167,7 +192,7 @@ namespace Recorder
         }
 
 // TODO: Enable camera preview based on sensor selection
-#if 0
+#ifdef ENABLE_RENDERING
         HoloLensForCV::SensorFrame^ latestCameraPreviewFrame =
             _mediaFrameSourceGroup->GetLatestSensorFrame(
                 HoloLensForCV::SensorType::ShortThrowToFReflectivity);
@@ -466,8 +491,10 @@ namespace Recorder
         if ((args->Result->Confidence == Windows::Media::SpeechRecognition::SpeechRecognitionConfidence::High) ||
             (args->Result->Confidence == Windows::Media::SpeechRecognition::SpeechRecognitionConfidence::Medium))
         {
-            _lastCommand =
-                args->Result->Text;
+            {
+                std::unique_lock<std::mutex> lastCommandLock(_lastCommandMutex);
+                _lastCommand = args->Result->Text;
+            }
 
             // When the debugger is attached, we can print information to the debug console.
             dbg::trace(
