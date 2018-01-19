@@ -232,6 +232,7 @@
   <ItemGroup>
     <ClInclude Include="CameraIntrinsics.h" />
     <ClInclude Include="CsvWriter.h" />
+    <ClInclude Include="ICameraIntrinsics.h" />
     <ClInclude Include="ISensorFrameSink.h" />
     <ClInclude Include="ISensorFrameSinkGroup.h" />
     <ClInclude Include="MediaFrameReaderContext.h" />
