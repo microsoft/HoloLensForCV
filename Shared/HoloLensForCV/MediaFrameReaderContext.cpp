@@ -202,6 +202,38 @@ namespace HoloLensForCV
             sensorFrame->FrameToOrigin =
                 zero;
         }
+        
+        static const Platform::Guid c_MFSampleExtension_Spatial_CameraViewTransform(0x4e251fa4, 0x830f, 0x4770, 0x85, 0x9a, 0x4b, 0x8d, 0x99, 0xaa, 0x80, 0x9b);
+
+        if (frame->Properties->HasKey(c_MFSampleExtension_Spatial_CameraViewTransform))
+        {
+            sensorFrame->CameraViewTransform = *reinterpret_cast<Windows::Foundation::Numerics::float4x4*>(
+                frame->Properties->Lookup(c_MFSampleExtension_Spatial_CameraViewTransform));
+
+#if DBG_ENABLE_VERBOSE_LOGGING
+            auto CameraViewTransform = sensorFrame->CameraViewTransform;
+            dbg::trace(
+                L"cameraViewTransform=[[%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f]]",
+                CameraViewTransform.m11, CameraViewTransform.m12, CameraViewTransform.m13, CameraViewTransform.m14,
+                CameraViewTransform.m21, CameraViewTransform.m22, CameraViewTransform.m23, CameraViewTransform.m24,
+                CameraViewTransform.m31, CameraViewTransform.m32, CameraViewTransform.m33, CameraViewTransform.m34,
+                CameraViewTransform.m41, CameraViewTransform.m42, CameraViewTransform.m43, CameraViewTransform.m44);
+#endif /* DBG_ENABLE_VERBOSE_LOGGING */
+        }
+        else {
+            //
+            // Set the CameraViewTransform to zero, making it obvious that we do not
+            // have a valid pose for this frame.
+            //
+            Windows::Foundation::Numerics::float4x4 zero;
+
+            memset(
+                &zero,
+                0 /* _Val */,
+                sizeof(zero));
+
+            sensorFrame->CameraViewTransform = zero;
+        }
 
         //
         // Hold a reference to the camera intrinsics.

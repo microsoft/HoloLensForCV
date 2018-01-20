@@ -64,6 +64,11 @@ namespace HoloLensForCV
                 columns.push_back(L"FrameToOrigin.m31"); columns.push_back(L"FrameToOrigin.m32"); columns.push_back(L"FrameToOrigin.m33"); columns.push_back(L"FrameToOrigin.m34");
                 columns.push_back(L"FrameToOrigin.m41"); columns.push_back(L"FrameToOrigin.m42"); columns.push_back(L"FrameToOrigin.m43"); columns.push_back(L"FrameToOrigin.m44");
 
+                columns.push_back(L"CameraViewTransform.m11"); columns.push_back(L"CameraViewTransform.m12"); columns.push_back(L"CameraViewTransform.m13"); columns.push_back(L"CameraViewTransform.m14");
+                columns.push_back(L"CameraViewTransform.m21"); columns.push_back(L"CameraViewTransform.m22"); columns.push_back(L"CameraViewTransform.m23"); columns.push_back(L"CameraViewTransform.m24");
+                columns.push_back(L"CameraViewTransform.m31"); columns.push_back(L"CameraViewTransform.m32"); columns.push_back(L"CameraViewTransform.m33"); columns.push_back(L"CameraViewTransform.m34");
+                columns.push_back(L"CameraViewTransform.m41"); columns.push_back(L"CameraViewTransform.m42"); columns.push_back(L"CameraViewTransform.m43"); columns.push_back(L"CameraViewTransform.m44");
+
                 csvWriter.WriteHeader(
                     columns);
             }
@@ -82,6 +87,10 @@ namespace HoloLensForCV
 
                 csvWriter.WriteFloat4x4(
                     recorderLogEntry.FrameToOrigin,
+                    &writeComma);
+
+                csvWriter.WriteFloat4x4(
+                    recorderLogEntry.CameraViewTransform,
                     &writeComma);
 
                 csvWriter.EndLine();
@@ -255,6 +264,9 @@ namespace HoloLensForCV
 
             recorderLogEntry.FrameToOrigin =
                 sensorFrame->FrameToOrigin;
+
+            recorderLogEntry.CameraViewTransform =
+                sensorFrame->CameraViewTransform;
 
             {
                 wchar_t relativePath[MAX_PATH] = {};

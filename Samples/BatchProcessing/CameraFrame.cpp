@@ -78,7 +78,8 @@ namespace BatchProcessing
             ASSERT(
                 1 /* Timestamp */ +
                 1 /* ImageFileName */ +
-                16 /* FrameToOrigin.m(1..4)(1..4) */ == tokens.size());
+                16 /* FrameToOrigin.m(1..4)(1..4) */ +
+                16 /* CameraViewTransform.m(1..4)(1..4) */ == tokens.size());
 
             //
             // Skip the CSV file header
@@ -88,6 +89,7 @@ namespace BatchProcessing
                 ASSERT(0 == strcmp(tokens[0].c_str(), "Timestamp"));
                 ASSERT(0 == strcmp(tokens[1].c_str(), "ImageFileName"));
                 ASSERT(0 == strcmp(tokens[17].c_str(), "FrameToOrigin.m44"));
+                ASSERT(0 == strcmp(tokens[33].c_str(), "CameraViewTransform.m44"));
 
                 csvFileHeaderSeen = true;
 
@@ -113,6 +115,12 @@ namespace BatchProcessing
                     4 /* cols */,
                     CV_32F /* type */);
 
+            cameraFrame.CameraViewTransform =
+                cv::Mat::eye(
+                    4 /* rows */,
+                    4 /* cols */,
+                    CV_32F /* type */);
+
             //
             // FrameToOrigin follows the timestamp and image file name fields:
             //
@@ -121,6 +129,17 @@ namespace BatchProcessing
                 for (int32_t i = 0; i < 4; ++i)
                 {
                     cameraFrame.FrameToOrigin.at<float>(j, i) =
+                        static_cast<float>(
+                            std::atof(
+                                tokens[j * 4 + i + 2].c_str()));
+                }
+            }
+
+            for (int32_t j = 0; j < 4; ++j)
+            {
+                for (int32_t i = 0; i < 4; ++i)
+                {
+                    cameraFrame.CameraViewTransform.at<float>(j, i) =
                         static_cast<float>(
                             std::atof(
                                 tokens[j * 4 + i + 2].c_str()));

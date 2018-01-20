@@ -531,9 +531,14 @@ namespace Recorder
         _sensorFrameRecorder =
             ref new HoloLensForCV::SensorFrameRecorder();
 
-        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::ShortThrowToFDepth);
-        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::ShortThrowToFReflectivity);
+        //_sensorFrameRecorder->Enable(HoloLensForCV::SensorType::ShortThrowToFDepth);
+        //_sensorFrameRecorder->Enable(HoloLensForCV::SensorType::ShortThrowToFReflectivity);
+        //_sensorFrameRecorder->Enable(HoloLensForCV::SensorType::LongThrowToFDepth);
+        //_sensorFrameRecorder->Enable(HoloLensForCV::SensorType::LongThrowToFReflectivity);
+        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::VisibleLightLeftLeft);
         _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::VisibleLightLeftFront);
+        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::VisibleLightRightFront);
+        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::VisibleLightRightRight);
 
         _mediaFrameSourceGroup =
             ref new HoloLensForCV::MediaFrameSourceGroup(

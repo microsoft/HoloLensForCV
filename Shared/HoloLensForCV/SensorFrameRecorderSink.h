@@ -20,6 +20,7 @@ namespace HoloLensForCV
     {
         Windows::Foundation::DateTime Timestamp;
         Windows::Foundation::Numerics::float4x4 FrameToOrigin;
+        Windows::Foundation::Numerics::float4x4 CameraViewTransform;
         std::wstring RelativeImagePath;
     };
 
