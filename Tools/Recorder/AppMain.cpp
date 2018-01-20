@@ -29,11 +29,11 @@ namespace Recorder
 {
     AppMain::AppMain(const std::shared_ptr<Graphics::DeviceResources>& deviceResources)
         : Holographic::AppMainBase(deviceResources)
-        , _lastCommand(nullptr)
+        , _speechSynthesizer(ref new Windows::Media::SpeechSynthesis::SpeechSynthesizer())
         , _mediaFrameSourceGroupStarted(false)
         , _sensorFrameRecorderStarted(false)
         , _cameraPreviewTimestamp()
-        , _maxTimeToRecordInSeconds(10)
+        , _maxTimeToRecordInSeconds(0)
     {
     }
 
@@ -52,17 +52,15 @@ namespace Recorder
         //
         StartHoloLensMediaFrameSourceGroup();
 
-        //
-        // Start the voice UI prompt.
-        //
-        BeginVoiceUIPrompt();
-
 #ifdef RECORDER_USE_SPEECH
-        //
-        // Start the speech recognizer.
-        //
         StartRecognizeSpeechCommands();
+        Platform::StringReference startSentence =
+            L"Say 'start' to begin, and 'stop' to end recording.";
+#else
+        Platform::StringReference startSentence =
+            L"Air tap to begin and end recording";
 #endif
+        SaySentence(startSentence);
     }
 
     void AppMain::OnSpatialInput(
@@ -78,18 +76,15 @@ namespace Recorder
             pointerState->TryGetPointerPose(currentCoordinateSystem));
 #endif 
 
-#ifndef  RECORDER_USE_SPEECH
-        if (_mediaFrameSourceGroupStarted)
+#ifndef RECORDER_USE_SPEECH
+        if (_sensorFrameRecorderStarted) {
+            concurrency::create_async([&]() { StopRecording(); });
+        }
+        else
         {
-            {
-                std::unique_lock<std::mutex> lastCommandLock(_lastCommandMutex);
-                _lastCommand = (_sensorFrameRecorderStarted) ? L"stop" : L"start";
-            }
-            // Play a sound to indicate a command was understood.
-            PlayVoiceCommandRecognitionSound();
+            concurrency::create_async([&]() { StartRecording(); });
         }
 #endif // ! RECORDER_USE_SPEECH
-
     }
 
     // Updates the application state once per frame.
@@ -123,64 +118,8 @@ namespace Recorder
             unsigned int elapsedTime = (int)(_recordTimer.GetMillisecondsFromStart() / 1000.0);
             if (elapsedTime >= _maxTimeToRecordInSeconds)
             {
-                std::unique_lock<std::mutex> lastCommandLock(_lastCommandMutex);
-                _lastCommand = L"stop";
+                concurrency::create_async([&]() { StopRecording(); });
             }
-        }
-
-        enum class Command {
-              START, STOP, UNKOWN
-        };
-
-        Command command;
-        {
-            std::unique_lock<std::mutex> lastCommandLock(_lastCommandMutex);
-            if (_lastCommand == L"start") {
-                command = Command::START;
-            }
-            else if (_lastCommand == L"stop") {
-                command = Command::STOP;
-            }
-            else {
-                command = Command::UNKOWN;
-            }
-        }
-
-
-        //
-        // Check for the voice commands.
-        //
-        if (command == Command::START)
-        {
-            if (!_sensorFrameRecorderStarted)
-            {
-                auto sensorFrameRecorderStartAsyncTask =
-                    concurrency::create_task(
-                        _sensorFrameRecorder->StartAsync());
-
-                sensorFrameRecorderStartAsyncTask.then(
-                    [&]()
-                {
-                    _sensorFrameRecorderStarted = true;
-
-                    // Start timer
-                    _recordTimer.Reset();
-                });
-            }
-        }
-        else if (command == Command::STOP)
-        {
-            if (_sensorFrameRecorderStarted)
-            {
-                _sensorFrameRecorder->Stop();
-
-                _sensorFrameRecorderStarted = false;
-            }
-        }
-
-        {
-            std::unique_lock<std::mutex> lastCommandLock(_lastCommandMutex);
-            _lastCommand = nullptr;
         }
 
         //
@@ -301,58 +240,40 @@ namespace Recorder
         StartHoloLensMediaFrameSourceGroup();
     }
 
-    void AppMain::BeginVoiceUIPrompt()
+    void AppMain::StartRecording()
     {
-        auto speechSynthesizer =
-            ref new Windows::Media::SpeechSynthesis::SpeechSynthesizer();
-
-#ifdef RECORDER_USE_SPEECH
-        Platform::StringReference voicePrompt =
-            L"Say 'start' to begin, and 'stop' to end recording.";
-#else
-        Platform::StringReference voicePrompt =
-            L"Air tap to begin and end recording";
-#endif
-
-        concurrency::create_task(
-            speechSynthesizer->SynthesizeTextToStreamAsync(voicePrompt),
-            concurrency::task_continuation_context::use_current()).
-            then([this, speechSynthesizer](
-                concurrency::task<Windows::Media::SpeechSynthesis::SpeechSynthesisStream^> synthesisStreamTask)
+        std::unique_lock<std::mutex> lock(_startStopRecordingMutex);
+        
+        if (!_mediaFrameSourceGroupStarted || _sensorFrameRecorderStarted)
         {
-            try
-            {
-                auto stream =
-                    synthesisStreamTask.get();
+            return;
+        }
 
-                auto hr =
-                    _speechSynthesisSound.Initialize(
-                        stream,
-                        0 /* loopCount */);
+        SaySentence(Platform::StringReference(L"Beginning recording"));
 
-                if (SUCCEEDED(hr))
-                {
-                    _speechSynthesisSound.SetEnvironment(HrtfEnvironment::Small);
-                    _speechSynthesisSound.Start();
+        auto sensorFrameRecorderStartAsyncTask =
+            concurrency::create_task(
+                _sensorFrameRecorder->StartAsync());
 
-#if 0
-                    // Amount of time to pause after the audio prompt is complete, before listening 
-                    // for speech input.
-                    static const float bufferTime = 0.15f;
-
-                    // Wait until the prompt is done before listening.
-                    _secondsUntilSoundIsComplete = _speechSynthesisSound.GetDuration() + bufferTime;
-                    _waitingForSpeechPrompt = true;
-#endif
-                }
-            }
-            catch (Platform::Exception^ exception)
-            {
-                dbg::trace(
-                    L"Exception while trying to synthesize speech: %s",
-                    exception->Message->Data());
-            }
+        sensorFrameRecorderStartAsyncTask.then([&]()
+        {
+            _sensorFrameRecorderStarted = true;
         });
+    }
+
+    void AppMain::StopRecording()
+    {
+        std::unique_lock<std::mutex> lock(_startStopRecordingMutex);
+
+        if (!_mediaFrameSourceGroupStarted || !_sensorFrameRecorderStarted)
+        {
+            return;
+        }
+
+        SaySentence(Platform::StringReference(L"Ending recording"));
+
+        _sensorFrameRecorder->Stop();
+        _sensorFrameRecorderStarted = false;
     }
 
     concurrency::task<void> AppMain::StopCurrentRecognizerIfExists()
@@ -482,6 +403,39 @@ namespace Recorder
         });
     }
 
+    void AppMain::SaySentence(Platform::StringReference sentence)
+    {
+        concurrency::create_task(
+            _speechSynthesizer->SynthesizeTextToStreamAsync(sentence),
+            concurrency::task_continuation_context::use_current()).
+            then([this](
+                concurrency::task<Windows::Media::SpeechSynthesis::SpeechSynthesisStream^> synthesisStreamTask)
+        {
+            try
+            {
+                auto stream =
+                    synthesisStreamTask.get();
+
+                auto hr =
+                    _speechSynthesisSound.Initialize(
+                        stream,
+                        0 /* loopCount */);
+
+                if (SUCCEEDED(hr))
+                {
+                    _speechSynthesisSound.SetEnvironment(HrtfEnvironment::Small);
+                    _speechSynthesisSound.Start();
+                }
+            }
+            catch (Platform::Exception^ exception)
+            {
+                dbg::trace(
+                    L"Exception while trying to synthesize speech: %s",
+                    exception->Message->Data());
+            }
+        });
+    }
+
     void AppMain::OnResultGenerated(
         Windows::Media::SpeechRecognition::SpeechContinuousRecognitionSession ^sender,
         Windows::Media::SpeechRecognition::SpeechContinuousRecognitionResultGeneratedEventArgs ^args)
@@ -491,18 +445,19 @@ namespace Recorder
         if ((args->Result->Confidence == Windows::Media::SpeechRecognition::SpeechRecognitionConfidence::High) ||
             (args->Result->Confidence == Windows::Media::SpeechRecognition::SpeechRecognitionConfidence::Medium))
         {
+            if (args->Result->Text == L"start")
             {
-                std::unique_lock<std::mutex> lastCommandLock(_lastCommandMutex);
-                _lastCommand = args->Result->Text;
+                concurrency::create_async([&]() { StartRecording(); });
+            }
+            else if (args->Result->Text == L"stop")
+            {
+                concurrency::create_async([&]() { StopRecording(); });
             }
 
             // When the debugger is attached, we can print information to the debug console.
             dbg::trace(
                 L"Last voice command was: '%s'",
                 args->Result->Text->Data());
-
-            // Play a sound to indicate a command was understood.
-            PlayVoiceCommandRecognitionSound();
         }
         else
         {

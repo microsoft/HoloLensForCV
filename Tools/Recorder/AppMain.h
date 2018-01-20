@@ -40,8 +40,9 @@ namespace Recorder
         virtual void OnRender() override;
 
     private:
-        // Renders the voice UI prompt.
-        void BeginVoiceUIPrompt();
+        // Start and stop recording frames.
+        void StartRecording();
+        void StopRecording();
 
         // Initializes a speech recognizer.
         bool InitializeSpeechRecognizer();
@@ -51,6 +52,9 @@ namespace Recorder
 
         // Resets the speech recognizer, if one exists.
         concurrency::task<void> StopCurrentRecognizerIfExists();
+
+        // Say a sentence using the speech synthesizer.
+        void SaySentence(Platform::StringReference sentence);
 
         // Process continuous speech recognition results.
         void OnResultGenerated(
@@ -76,21 +80,23 @@ namespace Recorder
         // Handles the start/stop commands for recording.
         Windows::Media::SpeechRecognition::SpeechRecognizer^ _speechRecognizer;
 
+        // Handles the speech feedback to the user.
+        Windows::Media::SpeechSynthesis::SpeechSynthesizer^ _speechSynthesizer;
+
         Windows::Foundation::EventRegistrationToken _speechRecognizerResultEventToken;
         Windows::Foundation::EventRegistrationToken _speechRecognitionQualityDegradedToken;
-
-        Platform::String^ _lastCommand;
-        std::mutex _lastCommandMutex;
 
         //
         // HoloLens media frame source groups -- one for the HoloLens Research Mode
         // sensor streaming support and one for the HoloLens Photo-Video camera.
         //
         HoloLensForCV::MediaFrameSourceGroup^ _mediaFrameSourceGroup;
-        bool _mediaFrameSourceGroupStarted;
+        std::atomic_bool _mediaFrameSourceGroupStarted;
 
         HoloLensForCV::SensorFrameRecorder^ _sensorFrameRecorder;
-        bool _sensorFrameRecorderStarted;
+        std::atomic_bool _sensorFrameRecorderStarted;
+
+        std::mutex _startStopRecordingMutex;
 
         // Camera preview.
         std::unique_ptr<Rendering::SlateRenderer> _slateRenderer;
