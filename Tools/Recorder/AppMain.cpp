@@ -66,9 +66,6 @@ namespace Recorder
     void AppMain::OnSpatialInput(
         _In_ Windows::UI::Input::Spatial::SpatialInteractionSourceState^ pointerState)
     {
-        Windows::Perception::Spatial::SpatialCoordinateSystem^ currentCoordinateSystem =
-            _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem;
-
 #ifdef ENABLE_RENDERING
         // When a Pressed gesture is detected, the sample hologram will be repositioned
         // two meters in front of the user.
@@ -218,15 +215,9 @@ namespace Recorder
     {
 #ifdef ENABLE_RENDERING
         _slateRenderer->ReleaseDeviceDependentResources();
-#endif
-        _mediaFrameSourceGroup = nullptr;
-        _mediaFrameSourceGroupStarted = false;
-
-        _sensorFrameRecorder = nullptr;
-        _sensorFrameRecorderStarted = false;
-
         _cameraPreviewTexture.reset();
         _cameraPreviewTimestamp.UniversalTime = 0;
+#endif
     }
 
     // Notifies classes that use Direct3D device resources that the device resources
@@ -236,8 +227,6 @@ namespace Recorder
 #ifdef ENABLE_RENDERING
         _slateRenderer->CreateDeviceDependentResources();
 #endif
-
-        StartHoloLensMediaFrameSourceGroup();
     }
 
     void AppMain::StartRecording()
