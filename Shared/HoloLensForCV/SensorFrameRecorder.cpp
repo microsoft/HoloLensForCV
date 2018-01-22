@@ -87,8 +87,7 @@ namespace HoloLensForCV
                             continue;
                         }
 
-                        sensorFrameSink->Start(
-                            _archiveSourceFolder);
+                        sensorFrameSink->Start(_archiveSourceFolder);
                     }
                 });
         });

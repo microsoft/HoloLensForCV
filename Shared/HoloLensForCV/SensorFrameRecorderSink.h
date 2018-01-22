@@ -64,6 +64,7 @@ namespace HoloLensForCV
         std::mutex _sinkMutex;
 
         Windows::Storage::StorageFolder^ _archiveSourceFolder;
+        Windows::Storage::StorageFolder^ _dataArchiveSourceFolder;
 
         std::vector<SensorFrameRecorderLogEntry> _recorderLog;
 
