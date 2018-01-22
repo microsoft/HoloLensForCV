@@ -31,5 +31,6 @@ namespace HoloLensForCV
         property CameraIntrinsics^ CameraIntrinsics;
         property Windows::Foundation::Numerics::float4x4 FrameToOrigin;
         property Windows::Foundation::Numerics::float4x4 CameraViewTransform;
+        property Windows::Foundation::Numerics::float4x4 CameraProjectionTransform;
     };
 }

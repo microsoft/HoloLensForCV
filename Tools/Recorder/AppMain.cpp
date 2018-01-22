@@ -69,6 +69,8 @@ namespace Recorder
 #ifdef ENABLE_RENDERING
         // When a Pressed gesture is detected, the sample hologram will be repositioned
         // two meters in front of the user.
+        Windows::Perception::Spatial::SpatialCoordinateSystem^ currentCoordinateSystem =
+            _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem;
         _slateRenderer->PositionHologram(
             pointerState->TryGetPointerPose(currentCoordinateSystem));
 #endif 

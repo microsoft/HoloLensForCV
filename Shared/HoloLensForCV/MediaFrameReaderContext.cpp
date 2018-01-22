@@ -198,7 +198,7 @@ namespace HoloLensForCV
         }
 
         //
-        // Extract camera view (camera-to-frame) transform, if the MFT exposed it:
+        // Extract camera view transform, if the MFT exposed it:
         //
         
         static const Platform::Guid c_MFSampleExtension_Spatial_CameraViewTransform(0x4e251fa4, 0x830f, 0x4770, 0x85, 0x9a, 0x4b, 0x8d, 0x99, 0xaa, 0x80, 0x9b);
@@ -237,6 +237,48 @@ namespace HoloLensForCV
 
             sensorFrame->CameraViewTransform = zero;
         }
+
+        //
+        // Extract camera project transform, if the MFT exposed it:
+        //
+
+        static const Platform::Guid c_MFSampleExtension_Spatial_CameraProjectionTransform(0x47f9fcb5, 0x2a02, 0x4f26, 0xa4, 0x77, 0x79, 0x2f, 0xdf, 0x95, 0x88, 0x6a);
+
+        if (frame->Properties->HasKey(c_MFSampleExtension_Spatial_CameraProjectionTransform))
+        {
+            Platform::Object^ mfMtUserData =
+                frame->Properties->Lookup(c_MFSampleExtension_Spatial_CameraProjectionTransform);
+            Platform::Array<byte>^ cameraVBewTransformAsPlatformArray =
+                safe_cast<Platform::IBoxArray<byte>^>(mfMtUserData)->Value;
+            sensorFrame->CameraProjectionTransform =
+                *reinterpret_cast<Windows::Foundation::Numerics::float4x4*>(
+                    cameraVBewTransformAsPlatformArray->Data);
+
+#if DBG_ENABLE_VERBOSE_LOGGING
+            auto cameraProjectionTransform = sensorFrame->CameraProjectionTransform;
+            dbg::trace(
+                L"cameraProjectionTransform=[[%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f]]",
+                cameraProjectionTransform.m11, cameraProjectionTransform.m12, cameraProjectionTransform.m13, cameraProjectionTransform.m14,
+                cameraProjectionTransform.m21, cameraProjectionTransform.m22, cameraProjectionTransform.m23, cameraProjectionTransform.m24,
+                cameraProjectionTransform.m31, cameraProjectionTransform.m32, cameraProjectionTransform.m33, cameraProjectionTransform.m34,
+                cameraProjectionTransform.m41, cameraProjectionTransform.m42, cameraProjectionTransform.m43, cameraProjectionTransform.m44);
+#endif /* DBG_ENABLE_VERBOSE_LOGGING */
+        }
+        else {
+            //
+            // Set the CameraProjectionTransform to zero, making it obvious that we do not
+            // have a valid pose for this frame.
+            //
+            Windows::Foundation::Numerics::float4x4 zero;
+
+            memset(
+                &zero,
+                0 /* _Val */,
+                sizeof(zero));
+
+            sensorFrame->CameraProjectionTransform = zero;
+        }
+
 
         //
         // Hold a reference to the camera intrinsics.

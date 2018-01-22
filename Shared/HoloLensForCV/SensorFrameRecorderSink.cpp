@@ -80,6 +80,11 @@ namespace HoloLensForCV
                 columns.push_back(L"CameraViewTransform.m31"); columns.push_back(L"CameraViewTransform.m32"); columns.push_back(L"CameraViewTransform.m33"); columns.push_back(L"CameraViewTransform.m34");
                 columns.push_back(L"CameraViewTransform.m41"); columns.push_back(L"CameraViewTransform.m42"); columns.push_back(L"CameraViewTransform.m43"); columns.push_back(L"CameraViewTransform.m44");
 
+                columns.push_back(L"CameraProjectionTransform.m11"); columns.push_back(L"CameraProjectionTransform.m12"); columns.push_back(L"CameraProjectionTransform.m13"); columns.push_back(L"CameraProjectionTransform.m14");
+                columns.push_back(L"CameraProjectionTransform.m21"); columns.push_back(L"CameraProjectionTransform.m22"); columns.push_back(L"CameraProjectionTransform.m23"); columns.push_back(L"CameraProjectionTransform.m24");
+                columns.push_back(L"CameraProjectionTransform.m31"); columns.push_back(L"CameraProjectionTransform.m32"); columns.push_back(L"CameraProjectionTransform.m33"); columns.push_back(L"CameraProjectionTransform.m34");
+                columns.push_back(L"CameraProjectionTransform.m41"); columns.push_back(L"CameraProjectionTransform.m42"); columns.push_back(L"CameraProjectionTransform.m43"); columns.push_back(L"CameraProjectionTransform.m44");
+
                 csvWriter.WriteHeader(
                     columns);
             }
@@ -102,6 +107,10 @@ namespace HoloLensForCV
 
                 csvWriter.WriteFloat4x4(
                     recorderLogEntry.CameraViewTransform,
+                    &writeComma);
+
+                csvWriter.WriteFloat4x4(
+                    recorderLogEntry.CameraProjectionTransform,
                     &writeComma);
 
                 csvWriter.EndLine();
@@ -276,6 +285,9 @@ namespace HoloLensForCV
 
             recorderLogEntry.CameraViewTransform =
                 sensorFrame->CameraViewTransform;
+
+            recorderLogEntry.CameraProjectionTransform =
+                sensorFrame->CameraProjectionTransform;
 
             {
                 wchar_t relativePath[MAX_PATH] = {};
