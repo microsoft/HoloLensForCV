@@ -30,9 +30,7 @@ namespace HoloLensForCV
         {
             std::lock_guard<std::mutex> latestSensorFrameMutexLockGuard(
                 _latestSensorFrameMutex);
-
-            latestSensorFrame =
-                _latestSensorFrame;
+            latestSensorFrame = _latestSensorFrame;
         }
 
         return latestSensorFrame;
@@ -139,10 +137,7 @@ namespace HoloLensForCV
         // frame on this object for immediate consumption by the app.
         //
         SensorFrame^ sensorFrame =
-            ref new SensorFrame(
-                _sensorType,
-                timestamp,
-                softwareBitmap);
+            ref new SensorFrame(_sensorType, timestamp, softwareBitmap);
 
         //
         // Extract the frame-to-origin transform, if the MFT exposed it:
@@ -170,7 +165,6 @@ namespace HoloLensForCV
 #if DBG_ENABLE_VERBOSE_LOGGING
                 Windows::Foundation::Numerics::float4x4 frameToOrigin =
                     frameToOriginReference->Value;
-
                 dbg::trace(
                     L"frameToOrigin=[[%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f]]",
                     frameToOrigin.m11, frameToOrigin.m12, frameToOrigin.m13, frameToOrigin.m14,
@@ -202,22 +196,31 @@ namespace HoloLensForCV
             sensorFrame->FrameToOrigin =
                 zero;
         }
+
+        //
+        // Extract camera view (camera-to-frame) transform, if the MFT exposed it:
+        //
         
         static const Platform::Guid c_MFSampleExtension_Spatial_CameraViewTransform(0x4e251fa4, 0x830f, 0x4770, 0x85, 0x9a, 0x4b, 0x8d, 0x99, 0xaa, 0x80, 0x9b);
 
         if (frame->Properties->HasKey(c_MFSampleExtension_Spatial_CameraViewTransform))
         {
-            sensorFrame->CameraViewTransform = *reinterpret_cast<Windows::Foundation::Numerics::float4x4*>(
-                frame->Properties->Lookup(c_MFSampleExtension_Spatial_CameraViewTransform));
+            Platform::Object^ mfMtUserData =
+                frame->Properties->Lookup(c_MFSampleExtension_Spatial_CameraViewTransform);
+            Platform::Array<byte>^ cameraVBewTransformAsPlatformArray =
+                safe_cast<Platform::IBoxArray<byte>^>(mfMtUserData)->Value;
+            sensorFrame->CameraViewTransform =
+                *reinterpret_cast<Windows::Foundation::Numerics::float4x4*>(
+                    cameraVBewTransformAsPlatformArray->Data);
 
 #if DBG_ENABLE_VERBOSE_LOGGING
-            auto CameraViewTransform = sensorFrame->CameraViewTransform;
+            auto cameraViewTransform = sensorFrame->CameraViewTransform;
             dbg::trace(
                 L"cameraViewTransform=[[%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f], [%f, %f, %f, %f]]",
-                CameraViewTransform.m11, CameraViewTransform.m12, CameraViewTransform.m13, CameraViewTransform.m14,
-                CameraViewTransform.m21, CameraViewTransform.m22, CameraViewTransform.m23, CameraViewTransform.m24,
-                CameraViewTransform.m31, CameraViewTransform.m32, CameraViewTransform.m33, CameraViewTransform.m34,
-                CameraViewTransform.m41, CameraViewTransform.m42, CameraViewTransform.m43, CameraViewTransform.m44);
+                cameraViewTransform.m11, cameraViewTransform.m12, cameraViewTransform.m13, cameraViewTransform.m14,
+                cameraViewTransform.m21, cameraViewTransform.m22, cameraViewTransform.m23, cameraViewTransform.m24,
+                cameraViewTransform.m31, cameraViewTransform.m32, cameraViewTransform.m33, cameraViewTransform.m34,
+                cameraViewTransform.m41, cameraViewTransform.m42, cameraViewTransform.m43, cameraViewTransform.m44);
 #endif /* DBG_ENABLE_VERBOSE_LOGGING */
         }
         else {
@@ -238,6 +241,7 @@ namespace HoloLensForCV
         //
         // Hold a reference to the camera intrinsics.
         //
+
         Windows::Media::Devices::Core::CameraIntrinsics^ ci = frame->VideoMediaFrame->CameraIntrinsics;
         if (frame->Properties->HasKey(SensorStreaming::MFSampleExtension_SensorStreaming_CameraIntrinsics))
         {
@@ -257,23 +261,19 @@ namespace HoloLensForCV
                 imageWidth = imageWidth * 4;
             }
 
-            sensorFrame->CameraIntrinsics = ref new CameraIntrinsics(cameraIntrinsics, 
-                                                                      imageWidth,
-                                                                      softwareBitmap->PixelHeight);
+            sensorFrame->CameraIntrinsics = ref new CameraIntrinsics(
+                cameraIntrinsics, imageWidth, softwareBitmap->PixelHeight);
         }
 
         if (nullptr != _sensorFrameSink)
         {
-            _sensorFrameSink->Send(
-                sensorFrame);
+            _sensorFrameSink->Send(sensorFrame);
         }
 
         {
             std::lock_guard<std::mutex> latestSensorFrameMutexLockGuard(
                 _latestSensorFrameMutex);
-
-            _latestSensorFrame =
-                sensorFrame;
+            _latestSensorFrame = sensorFrame;
         }
     }
 }
