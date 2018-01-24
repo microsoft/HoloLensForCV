@@ -22,6 +22,8 @@ namespace BatchProcessing
         Windows::Storage::StorageFolder^ RecordingFolder;
         std::wstring FileName;
         cv::Mat FrameToOrigin;
+        cv::Mat CameraViewTransform;
+        cv::Mat CameraProjectionTransform;
         int32_t Width;
         int32_t Height;
         int32_t PixelFormat;

@@ -28,18 +28,29 @@ namespace HoloLensForCV
     void SensorFrameRecorderSink::Start(
         _In_ Windows::Storage::StorageFolder^ archiveSourceFolder)
     {
-        std::lock_guard<std::mutex> guard(
-            _sinkMutex);
 
-        REQUIRES(nullptr == _archiveSourceFolder);
+        // Remember the root folder for the recorded sensor meta-data.
 
-        _archiveSourceFolder = archiveSourceFolder;
+        {
+            std::lock_guard<std::mutex> guard(_sinkMutex);
+            REQUIRES(nullptr == _archiveSourceFolder);
+            _archiveSourceFolder = archiveSourceFolder;
+        }
+
+        // Create a sub-folder for the recorder sensor stream data.
+
+        concurrency::create_task(archiveSourceFolder->CreateFolderAsync(
+            _sensorName, Windows::Storage::CreationCollisionOption::ReplaceExisting)
+        ).then([&](Windows::Storage::StorageFolder^ dataArchiveSourceFolder) {
+            std::lock_guard<std::mutex> guard(_sinkMutex);
+            REQUIRES(nullptr == _dataArchiveSourceFolder);
+            _dataArchiveSourceFolder = dataArchiveSourceFolder;
+        });
     }
 
     void SensorFrameRecorderSink::Stop()
     {
-        std::lock_guard<std::mutex> guard(
-            _sinkMutex);
+        std::lock_guard<std::mutex> guard(_sinkMutex);
 
         {
             wchar_t fileName[MAX_PATH] = {};
@@ -64,6 +75,16 @@ namespace HoloLensForCV
                 columns.push_back(L"FrameToOrigin.m31"); columns.push_back(L"FrameToOrigin.m32"); columns.push_back(L"FrameToOrigin.m33"); columns.push_back(L"FrameToOrigin.m34");
                 columns.push_back(L"FrameToOrigin.m41"); columns.push_back(L"FrameToOrigin.m42"); columns.push_back(L"FrameToOrigin.m43"); columns.push_back(L"FrameToOrigin.m44");
 
+                columns.push_back(L"CameraViewTransform.m11"); columns.push_back(L"CameraViewTransform.m12"); columns.push_back(L"CameraViewTransform.m13"); columns.push_back(L"CameraViewTransform.m14");
+                columns.push_back(L"CameraViewTransform.m21"); columns.push_back(L"CameraViewTransform.m22"); columns.push_back(L"CameraViewTransform.m23"); columns.push_back(L"CameraViewTransform.m24");
+                columns.push_back(L"CameraViewTransform.m31"); columns.push_back(L"CameraViewTransform.m32"); columns.push_back(L"CameraViewTransform.m33"); columns.push_back(L"CameraViewTransform.m34");
+                columns.push_back(L"CameraViewTransform.m41"); columns.push_back(L"CameraViewTransform.m42"); columns.push_back(L"CameraViewTransform.m43"); columns.push_back(L"CameraViewTransform.m44");
+
+                columns.push_back(L"CameraProjectionTransform.m11"); columns.push_back(L"CameraProjectionTransform.m12"); columns.push_back(L"CameraProjectionTransform.m13"); columns.push_back(L"CameraProjectionTransform.m14");
+                columns.push_back(L"CameraProjectionTransform.m21"); columns.push_back(L"CameraProjectionTransform.m22"); columns.push_back(L"CameraProjectionTransform.m23"); columns.push_back(L"CameraProjectionTransform.m24");
+                columns.push_back(L"CameraProjectionTransform.m31"); columns.push_back(L"CameraProjectionTransform.m32"); columns.push_back(L"CameraProjectionTransform.m33"); columns.push_back(L"CameraProjectionTransform.m34");
+                columns.push_back(L"CameraProjectionTransform.m41"); columns.push_back(L"CameraProjectionTransform.m42"); columns.push_back(L"CameraProjectionTransform.m43"); columns.push_back(L"CameraProjectionTransform.m44");
+
                 csvWriter.WriteHeader(
                     columns);
             }
@@ -82,6 +103,14 @@ namespace HoloLensForCV
 
                 csvWriter.WriteFloat4x4(
                     recorderLogEntry.FrameToOrigin,
+                    &writeComma);
+
+                csvWriter.WriteFloat4x4(
+                    recorderLogEntry.CameraViewTransform,
+                    &writeComma);
+
+                csvWriter.WriteFloat4x4(
+                    recorderLogEntry.CameraProjectionTransform,
                     &writeComma);
 
                 csvWriter.EndLine();
@@ -128,10 +157,9 @@ namespace HoloLensForCV
             L"SensorFrameRecorderSink::Send: synchrounous I/O",
             20.0 /* minimum_time_elapsed_in_milliseconds */);
 
-        std::lock_guard<std::mutex> lockGuard(
-            _sinkMutex);
+        std::lock_guard<std::mutex> lockGuard(_sinkMutex);
 
-        if (nullptr == _archiveSourceFolder)
+        if (nullptr == _archiveSourceFolder || nullptr == _dataArchiveSourceFolder)
         {
             return;
         }
@@ -141,8 +169,7 @@ namespace HoloLensForCV
         //
         if (nullptr == _cameraIntrinsics)
         {
-            _cameraIntrinsics =
-                sensorFrame->CameraIntrinsics;
+            _cameraIntrinsics = sensorFrame->CameraIntrinsics;
         }
 
         //
@@ -154,7 +181,7 @@ namespace HoloLensForCV
         sprintf_s(
             absolutePath,
             "%S\\%020llu_%S.pgm",
-            _archiveSourceFolder->Path->Data(),
+            _dataArchiveSourceFolder->Path->Data(),
             sensorFrame->Timestamp.UniversalTime,
             _sensorName->Data());
 
@@ -255,6 +282,12 @@ namespace HoloLensForCV
 
             recorderLogEntry.FrameToOrigin =
                 sensorFrame->FrameToOrigin;
+
+            recorderLogEntry.CameraViewTransform =
+                sensorFrame->CameraViewTransform;
+
+            recorderLogEntry.CameraProjectionTransform =
+                sensorFrame->CameraProjectionTransform;
 
             {
                 wchar_t relativePath[MAX_PATH] = {};

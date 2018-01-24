@@ -87,8 +87,7 @@ namespace HoloLensForCV
                             continue;
                         }
 
-                        sensorFrameSink->Start(
-                            _archiveSourceFolder);
+                        sensorFrameSink->Start(_archiveSourceFolder);
                     }
                 });
         });
@@ -147,25 +146,18 @@ namespace HoloLensForCV
 
             swprintf_s(
                 archiveName,
-                L"HoloLensRecording__%04i_%02i_%02i__%02i_%02i_%02i.tar",
+                L"HoloLensRecording__%04i_%02i_%02i__%02i_%02i_%02i",
                 timeNowUtc.tm_year + 1900,
-                timeNowUtc.tm_mon,
+                timeNowUtc.tm_mon + 1,
                 timeNowUtc.tm_mday,
                 timeNowUtc.tm_hour,
                 timeNowUtc.tm_min,
                 timeNowUtc.tm_sec);
 
-            Io::CreateTarball(
-                _archiveSourceFolder,
-                sourceFiles,
-                Windows::Storage::ApplicationData::Current->TemporaryFolder /* tarballFolder */,
-                archiveName);
+            Platform::String^ archiveNameString =
+                ref new Platform::String(archiveName);
+            _archiveSourceFolder->RenameAsync(archiveNameString);
         }
-
-        //
-        // We are now ready to delete the source folder.
-        //
-        _archiveSourceFolder->DeleteAsync();
 
         _archiveSourceFolder = nullptr;
     }

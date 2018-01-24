@@ -20,6 +20,8 @@ namespace HoloLensForCV
     {
         Windows::Foundation::DateTime Timestamp;
         Windows::Foundation::Numerics::float4x4 FrameToOrigin;
+        Windows::Foundation::Numerics::float4x4 CameraViewTransform;
+        Windows::Foundation::Numerics::float4x4 CameraProjectionTransform;
         std::wstring RelativeImagePath;
     };
 
@@ -63,6 +65,7 @@ namespace HoloLensForCV
         std::mutex _sinkMutex;
 
         Windows::Storage::StorageFolder^ _archiveSourceFolder;
+        Windows::Storage::StorageFolder^ _dataArchiveSourceFolder;
 
         std::vector<SensorFrameRecorderLogEntry> _recorderLog;
 
