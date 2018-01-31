@@ -238,8 +238,8 @@ namespace HoloLensForCV
             {
                 for (unsigned int y = 0; y < cameraIntrinsics->ImageHeight; ++y)
                 {
-                    Windows::Foundation::Point uv = { float(x), float(y) };
-                    auto xy = cameraIntrinsics->MapImagePointToCameraUnitPlane(uv);
+                    Windows::Foundation::Point uv = { float(x), float(y) }, xy;
+                    cameraIntrinsics->MapImagePointToCameraUnitPlane(uv, &xy);
                     pointList[index++] = xy;
                 }
             }

@@ -120,57 +120,72 @@ namespace ComputeOnDevice
         rmcv::WrapHoloLensSensorFrameWithCvMat(
             latestFrame,
             wrappedImage);
-            //TODO: Handle Instrinsics for PV and RM cameras
-#if 0
+
         if (!_undistortMapsInitialized)
         {
             Windows::Media::Devices::Core::CameraIntrinsics^ cameraIntrinsics =
-                latestFrame->CameraIntrinsics;
+                latestFrame->CoreCameraIntrinsics;
 
-            cv::Mat cameraMatrix(3, 3, CV_64FC1);
+            if (nullptr != cameraIntrinsics)
+            {
+                cv::Mat cameraMatrix(3, 3, CV_64FC1);
 
-            cv::setIdentity(cameraMatrix);
+                cv::setIdentity(cameraMatrix);
 
-            cameraMatrix.at<double>(0, 0) = cameraIntrinsics->FocalLength.x;
-            cameraMatrix.at<double>(1, 1) = cameraIntrinsics->FocalLength.y;
-            cameraMatrix.at<double>(0, 2) = cameraIntrinsics->PrincipalPoint.x;
-            cameraMatrix.at<double>(1, 2) = cameraIntrinsics->PrincipalPoint.y;
+                cameraMatrix.at<double>(0, 0) = cameraIntrinsics->FocalLength.x;
+                cameraMatrix.at<double>(1, 1) = cameraIntrinsics->FocalLength.y;
+                cameraMatrix.at<double>(0, 2) = cameraIntrinsics->PrincipalPoint.x;
+                cameraMatrix.at<double>(1, 2) = cameraIntrinsics->PrincipalPoint.y;
 
-            cv::Mat distCoeffs(5, 1, CV_64FC1);
+                cv::Mat distCoeffs(5, 1, CV_64FC1);
 
-            distCoeffs.at<double>(0, 0) = cameraIntrinsics->RadialDistortion.x;
-            distCoeffs.at<double>(1, 0) = cameraIntrinsics->RadialDistortion.y;
-            distCoeffs.at<double>(2, 0) = cameraIntrinsics->TangentialDistortion.x;
-            distCoeffs.at<double>(3, 0) = cameraIntrinsics->TangentialDistortion.y;
-            distCoeffs.at<double>(4, 0) = cameraIntrinsics->RadialDistortion.z;
+                distCoeffs.at<double>(0, 0) = cameraIntrinsics->RadialDistortion.x;
+                distCoeffs.at<double>(1, 0) = cameraIntrinsics->RadialDistortion.y;
+                distCoeffs.at<double>(2, 0) = cameraIntrinsics->TangentialDistortion.x;
+                distCoeffs.at<double>(3, 0) = cameraIntrinsics->TangentialDistortion.y;
+                distCoeffs.at<double>(4, 0) = cameraIntrinsics->RadialDistortion.z;
 
-            cv::initUndistortRectifyMap(
-                cameraMatrix,
-                distCoeffs,
-                cv::Mat_<double>::eye(3, 3) /* R */,
-                cameraMatrix,
-                cv::Size(wrappedImage.cols, wrappedImage.rows),
-                CV_32FC1 /* type */,
-                _undistortMap1,
-                _undistortMap2);
+                cv::initUndistortRectifyMap(
+                    cameraMatrix,
+                    distCoeffs,
+                    cv::Mat_<double>::eye(3, 3) /* R */,
+                    cameraMatrix,
+                    cv::Size(wrappedImage.cols, wrappedImage.rows),
+                    CV_32FC1 /* type */,
+                    _undistortMap1,
+                    _undistortMap2);
 
-            _undistortMapsInitialized = true;
+                _undistortMapsInitialized = true;
+            }
         }
-#endif
-        cv::remap(
-            wrappedImage,
-            _undistortedPVCameraImage,
-            _undistortMap1,
-            _undistortMap2,
-            cv::INTER_LINEAR);
 
-        cv::resize(
-            _undistortedPVCameraImage,
-            _resizedPVCameraImage,
-            cv::Size(),
-            0.5 /* fx */,
-            0.5 /* fy */,
-            cv::INTER_AREA);
+        if (_undistortMapsInitialized)
+        {
+            cv::remap(
+                wrappedImage,
+                _undistortedPVCameraImage,
+                _undistortMap1,
+                _undistortMap2,
+                cv::INTER_LINEAR);
+
+            cv::resize(
+                _undistortedPVCameraImage,
+                _resizedPVCameraImage,
+                cv::Size(),
+                0.5 /* fx */,
+                0.5 /* fy */,
+                cv::INTER_AREA);
+        }
+        else
+        {
+            cv::resize(
+                wrappedImage,
+                _resizedPVCameraImage,
+                cv::Size(),
+                0.5 /* fx */,
+                0.5 /* fy */,
+                cv::INTER_AREA);
+        }
 
         cv::medianBlur(
             _resizedPVCameraImage,

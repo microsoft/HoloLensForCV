@@ -1,33 +1,65 @@
+//*********************************************************
+//
+// Copyright (c) Microsoft. All rights reserved.
+// This code is licensed under the MIT License (MIT).
+// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
+// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
+// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
+// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
+//
+//*********************************************************
+
 #include "pch.h"
-#include "CameraIntrinsics.h"
 
 namespace HoloLensForCV
 {
     CameraIntrinsics::CameraIntrinsics(
-        Microsoft::WRL::ComPtr<SensorStreaming::ICameraIntrinsics> intrinsics,
+        _In_ Microsoft::WRL::ComPtr<SensorStreaming::ICameraIntrinsics> sensorStreamingCameraIntrinsics,
         _In_ unsigned int imageWidth,
-        _In_ unsigned int imageHeight) :
-        _intrinsics(intrinsics)
+        _In_ unsigned int imageHeight)
+        : _sensorStreamingCameraIntrinsics(sensorStreamingCameraIntrinsics)
     {
         ImageWidth = imageWidth;
         ImageHeight = imageHeight;
-
     }
 
-    Windows::Foundation::Point CameraIntrinsics::MapImagePointToCameraUnitPlane(
-        Windows::Foundation::Point pixel)
+    bool CameraIntrinsics::MapImagePointToCameraUnitPlane(
+        _In_ Windows::Foundation::Point UV,
+        _Out_ Windows::Foundation::Point* XY)
     {
-        float uv[2] = { pixel.X, pixel.Y };
+        float uv[2] = { UV.X, UV.Y };
         float xy[2];
-        HRESULT hr = _intrinsics->MapImagePointToCameraUnitPlane(uv, xy);
 
-        if (FAILED(hr))
+        if (FAILED(_sensorStreamingCameraIntrinsics->MapImagePointToCameraUnitPlane(uv, xy)))
         {
-            throw ref new Platform::COMException(hr, "Failed to map image point to the camera unit plane");
+            XY->X = XY->Y = std::numeric_limits<float>::infinity();
+
+            return false;
         }
 
-        Windows::Foundation::Point unitPlanePoint = {xy[0], xy[1]};
-        
-        return unitPlanePoint;
+        XY->X = xy[0];
+        XY->Y = xy[1];
+
+        return true;
+    }
+
+    bool CameraIntrinsics::MapCameraSpaceToImagePoint(
+        _In_ Windows::Foundation::Point XY,
+        _Out_ Windows::Foundation::Point* UV)
+    {
+        float xy[2] = { XY.X, XY.Y };
+        float uv[2];
+
+        if (FAILED(_sensorStreamingCameraIntrinsics->MapCameraSpaceToImagePoint(xy, uv)))
+        {
+            UV->X = UV->Y = std::numeric_limits<float>::infinity();
+
+            return false;
+        }
+
+        UV->X = uv[0];
+        UV->Y = uv[1];
+
+        return true;
     }
 }

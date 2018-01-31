@@ -181,8 +181,8 @@ namespace HoloLensForCV
         //
         // Extract camera view transform, if the MFT exposed it:
         //
-        
-        static const Platform::Guid c_MFSampleExtension_Spatial_CameraViewTransform(0x4e251fa4, 0x830f, 0x4770, 0x85, 0x9a, 0x4b, 0x8d, 0x99, 0xaa, 0x80, 0x9b);
+        static const Platform::Guid c_MFSampleExtension_Spatial_CameraViewTransform(
+            0x4e251fa4, 0x830f, 0x4770, 0x85, 0x9a, 0x4b, 0x8d, 0x99, 0xaa, 0x80, 0x9b);
 
         if (frame->Properties->HasKey(c_MFSampleExtension_Spatial_CameraViewTransform))
         {
@@ -204,7 +204,8 @@ namespace HoloLensForCV
                 cameraViewTransform.m41, cameraViewTransform.m42, cameraViewTransform.m43, cameraViewTransform.m44);
 #endif /* DBG_ENABLE_VERBOSE_LOGGING */
         }
-        else {
+        else
+        {
             //
             // Set the CameraViewTransform to zero, making it obvious that we do not
             // have a valid pose for this frame.
@@ -220,10 +221,10 @@ namespace HoloLensForCV
         }
 
         //
-        // Extract camera project transform, if the MFT exposed it:
+        // Extract camera projection transform, if the MFT exposed it:
         //
-
-        static const Platform::Guid c_MFSampleExtension_Spatial_CameraProjectionTransform(0x47f9fcb5, 0x2a02, 0x4f26, 0xa4, 0x77, 0x79, 0x2f, 0xdf, 0x95, 0x88, 0x6a);
+        static const Platform::Guid c_MFSampleExtension_Spatial_CameraProjectionTransform(
+            0x47f9fcb5, 0x2a02, 0x4f26, 0xa4, 0x77, 0x79, 0x2f, 0xdf, 0x95, 0x88, 0x6a);
 
         if (frame->Properties->HasKey(c_MFSampleExtension_Spatial_CameraProjectionTransform))
         {
@@ -245,7 +246,8 @@ namespace HoloLensForCV
                 cameraProjectionTransform.m41, cameraProjectionTransform.m42, cameraProjectionTransform.m43, cameraProjectionTransform.m44);
 #endif /* DBG_ENABLE_VERBOSE_LOGGING */
         }
-        else {
+        else
+        {
             //
             // Set the CameraProjectionTransform to zero, making it obvious that we do not
             // have a valid pose for this frame.
@@ -260,20 +262,19 @@ namespace HoloLensForCV
             sensorFrame->CameraProjectionTransform = zero;
         }
 
-
         //
-        // Hold a reference to the camera intrinsics.
+        // See if the frame comes with HoloLens Sensor Streaming specific intrinsics...
         //
-
-        Windows::Media::Devices::Core::CameraIntrinsics^ ci = frame->VideoMediaFrame->CameraIntrinsics;
         if (frame->Properties->HasKey(SensorStreaming::MFSampleExtension_SensorStreaming_CameraIntrinsics))
         {
-            Microsoft::WRL::ComPtr<SensorStreaming::ICameraIntrinsics> cameraIntrinsics = reinterpret_cast<SensorStreaming::ICameraIntrinsics*>(
-                frame->Properties->Lookup(
-                    SensorStreaming::MFSampleExtension_SensorStreaming_CameraIntrinsics));
+            Microsoft::WRL::ComPtr<SensorStreaming::ICameraIntrinsics> sensorStreamingCameraIntrinsics =
+                reinterpret_cast<SensorStreaming::ICameraIntrinsics*>(
+                    frame->Properties->Lookup(
+                        SensorStreaming::MFSampleExtension_SensorStreaming_CameraIntrinsics));
 
-            
-            // Get the unpacked width VLC
+            //
+            // The visible light camera images are grayscale, but packed as 32bpp ARGB images.
+            // 
             unsigned int imageWidth = softwareBitmap->PixelWidth;
 
             if ((_sensorType == SensorType::VisibleLightLeftFront) ||
@@ -284,18 +285,36 @@ namespace HoloLensForCV
                 imageWidth = imageWidth * 4;
             }
 
-            sensorFrame->CameraIntrinsics = ref new CameraIntrinsics(
-                cameraIntrinsics, imageWidth, softwareBitmap->PixelHeight);
+            sensorFrame->SensorStreamingCameraIntrinsics =
+                ref new CameraIntrinsics(
+                    sensorStreamingCameraIntrinsics,
+                    imageWidth,
+                    softwareBitmap->PixelHeight);
+        }
+        else
+        {
+            if (_sensorType != SensorType::PhotoVideo)
+            {
+                dbg::trace(
+                    L"MediaFrameReaderContext::FrameArrived: _sensorType=%s (%i), MFSampleExtension_SensorStreaming_CameraIntrinsics not found!",
+                    _sensorType.ToString()->Data(),
+                    (int32_t)_sensorType);
+            }
+
+            sensorFrame->CoreCameraIntrinsics =
+                frame->VideoMediaFrame->CameraIntrinsics;
         }
 
         if (nullptr != _sensorFrameSink)
         {
-            _sensorFrameSink->Send(sensorFrame);
+            _sensorFrameSink->Send(
+                sensorFrame);
         }
 
         {
             std::lock_guard<std::mutex> latestSensorFrameMutexLockGuard(
                 _latestSensorFrameMutex);
+
             _latestSensorFrame = sensorFrame;
         }
     }

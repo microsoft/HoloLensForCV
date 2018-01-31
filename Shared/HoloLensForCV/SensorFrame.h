@@ -28,7 +28,9 @@ namespace HoloLensForCV
         property Windows::Foundation::DateTime Timestamp;
         property Windows::Graphics::Imaging::SoftwareBitmap^ SoftwareBitmap;
 
-        property CameraIntrinsics^ CameraIntrinsics;
+        property Windows::Media::Devices::Core::CameraIntrinsics^ CoreCameraIntrinsics;
+        property CameraIntrinsics^ SensorStreamingCameraIntrinsics;
+
         property Windows::Foundation::Numerics::float4x4 FrameToOrigin;
         property Windows::Foundation::Numerics::float4x4 CameraViewTransform;
         property Windows::Foundation::Numerics::float4x4 CameraProjectionTransform;

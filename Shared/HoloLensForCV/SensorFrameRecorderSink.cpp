@@ -169,7 +169,8 @@ namespace HoloLensForCV
         //
         if (nullptr == _cameraIntrinsics)
         {
-            _cameraIntrinsics = sensorFrame->CameraIntrinsics;
+            _cameraIntrinsics =
+                sensorFrame->SensorStreamingCameraIntrinsics;
         }
 
         //
