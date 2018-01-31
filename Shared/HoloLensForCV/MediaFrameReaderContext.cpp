@@ -105,9 +105,12 @@ namespace HoloLensForCV
         // cause the system to call Close (or Dispose in C#) on the oldest buffer object in
         // order to reuse it.
         //
+        // Because creating a copy of the software bitmap just in case the app would want to hold
+        // onto it is fairly expensive, we will let the application decide whether to make a copy
+        // or risk getting the reference to the media frame closed in flight.
+        //
         Windows::Graphics::Imaging::SoftwareBitmap^ softwareBitmap =
-            Windows::Graphics::Imaging::SoftwareBitmap::Copy(
-                frame->VideoMediaFrame->SoftwareBitmap);
+            frame->VideoMediaFrame->SoftwareBitmap;
 
         //
         // Finally, wrap all of the above information in a SensorFrame object and pass it
