@@ -266,6 +266,9 @@ namespace ComputeOnDevice
                 _spatialPerception,
                 _sensorFrameStreamer);
 
+        _holoLensMediaFrameSourceGroup->Enable(
+            HoloLensForCV::SensorType::PhotoVideo);
+
         concurrency::create_task(_holoLensMediaFrameSourceGroup->StartAsync()).then(
             [&]()
         {

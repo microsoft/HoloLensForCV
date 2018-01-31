@@ -514,6 +514,26 @@ namespace Recorder
 
     void AppMain::StartHoloLensMediaFrameSourceGroup()
     {
+        std::vector<HoloLensForCV::SensorType> enabledSensorTypes;
+
+        //
+        // Enabling all of the Research Mode sensors at the same time can be quite expensive
+        // performance-wise. It's best to scope down the list of enabled sensors to just those
+        // that are required for a given task. In this example, we will select just the visible
+        // light sensors.
+        //
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::VisibleLightLeftLeft);
+
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::VisibleLightLeftFront);
+
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::VisibleLightRightFront);
+
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::VisibleLightRightRight);
+
         REQUIRES(
             !_mediaFrameSourceGroupStarted &&
             !_sensorFrameRecorderStarted &&
@@ -522,20 +542,23 @@ namespace Recorder
         _sensorFrameRecorder =
             ref new HoloLensForCV::SensorFrameRecorder();
 
-        //_sensorFrameRecorder->Enable(HoloLensForCV::SensorType::ShortThrowToFDepth);
-        //_sensorFrameRecorder->Enable(HoloLensForCV::SensorType::ShortThrowToFReflectivity);
-        //_sensorFrameRecorder->Enable(HoloLensForCV::SensorType::LongThrowToFDepth);
-        //_sensorFrameRecorder->Enable(HoloLensForCV::SensorType::LongThrowToFReflectivity);
-        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::VisibleLightLeftLeft);
-        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::VisibleLightLeftFront);
-        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::VisibleLightRightFront);
-        _sensorFrameRecorder->Enable(HoloLensForCV::SensorType::VisibleLightRightRight);
+        for (const auto enabledSensorType : enabledSensorTypes)
+        {
+            _sensorFrameRecorder->Enable(
+                enabledSensorType);
+        }
 
         _mediaFrameSourceGroup =
             ref new HoloLensForCV::MediaFrameSourceGroup(
                 HoloLensForCV::MediaFrameSourceGroupType::HoloLensResearchModeSensors,
                 _spatialPerception,
                 _sensorFrameRecorder);
+
+        for (const auto enabledSensorType : enabledSensorTypes)
+        {
+            _mediaFrameSourceGroup->Enable(
+                enabledSensorType);
+        }
 
         auto captureSartAsyncTask =
             concurrency::create_task(

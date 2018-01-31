@@ -26,6 +26,74 @@ namespace HoloLensForCV
     {
     }
 
+    void MediaFrameSourceGroup::EnableAll()
+    {
+        switch (_mediaFrameSourceGroupType)
+        {
+        case MediaFrameSourceGroupType::PhotoVideoCamera:
+            Enable(SensorType::PhotoVideo);
+            break;
+
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+        case MediaFrameSourceGroupType::HoloLensResearchModeSensors:
+            Enable(SensorType::ShortThrowToFDepth);
+            Enable(SensorType::ShortThrowToFReflectivity);
+            Enable(SensorType::LongThrowToFDepth);
+            Enable(SensorType::LongThrowToFReflectivity);
+            Enable(SensorType::VisibleLightLeftLeft);
+            Enable(SensorType::VisibleLightLeftFront);
+            Enable(SensorType::VisibleLightRightFront);
+            Enable(SensorType::VisibleLightRightRight);
+            break;
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
+        }
+    }
+
+    void MediaFrameSourceGroup::Enable(
+        _In_ SensorType sensorType)
+    {
+        const int32_t sensorTypeAsIndex =
+            (int32_t)sensorType;
+
+        REQUIRES(
+            0 <= sensorTypeAsIndex &&
+            sensorTypeAsIndex < (int32_t)_enabledFrameReaders.size());
+
+        _enabledFrameReaders[sensorTypeAsIndex] =
+            true;
+    }
+
+    bool MediaFrameSourceGroup::IsEnabled(
+        _In_ SensorType sensorType) const
+    {
+        const int32_t sensorTypeAsIndex =
+            (int32_t)sensorType;
+
+        REQUIRES(
+            0 <= sensorTypeAsIndex &&
+            sensorTypeAsIndex < (int32_t)_enabledFrameReaders.size());
+
+        return _enabledFrameReaders[sensorTypeAsIndex];
+    }
+
+    bool MediaFrameSourceGroup::IsStarted(
+        _In_ SensorType sensorType)
+    {
+        if (!IsEnabled(sensorType))
+        {
+            return false;
+        }
+
+        const int32_t sensorTypeAsIndex =
+            (int32_t)sensorType;
+
+        REQUIRES(
+            0 <= sensorTypeAsIndex &&
+            sensorTypeAsIndex < (int32_t)_frameReaders.size());
+
+        return nullptr != _frameReaders[sensorTypeAsIndex];
+    }
+
     Windows::Foundation::IAsyncAction^ MediaFrameSourceGroup::StartAsync()
     {
         return concurrency::create_async(
@@ -170,6 +238,19 @@ namespace HoloLensForCV
 #if DBG_ENABLE_INFORMATIONAL_LOGGING
                             dbg::trace(
                                 L"MediaFrameSourceGroup::InitializeMediaSourceWorkerAsync: sensor type %s has already been initialized!",
+                                sensorType.ToString());
+#endif /* DBG_ENABLE_INFORMATIONAL_LOGGING */
+
+                            return Concurrency::task_from_result();
+                        }
+                        else if (!IsEnabled(sensorType))
+                        {
+                            //
+                            // The sensor type was not explicitly enabled by user. Ignore this source.
+                            //
+#if DBG_ENABLE_INFORMATIONAL_LOGGING
+                            dbg::trace(
+                                L"MediaFrameSourceGroup::InitializeMediaSourceWorkerAsync: sensor type %s has not been enabled!",
                                 sensorType.ToString());
 #endif /* DBG_ENABLE_INFORMATIONAL_LOGGING */
 

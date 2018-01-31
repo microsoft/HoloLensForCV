@@ -24,12 +24,30 @@ namespace HoloLensForCV
             _In_ SpatialPerception^ spacialPerception,
             _In_opt_ ISensorFrameSinkGroup^ optionalSensorFrameSinkGroup);
 
+        void EnableAll();
+
+        void Enable(
+            _In_ SensorType sensorType);
+
         Windows::Foundation::IAsyncAction^ StartAsync();
+
+        /// <summary>
+        /// Returns true if the sensor was explicitly enabled by the user *and* we have
+        /// managed to actually enumerate and start it.
+        /// </summary>
+        bool IsStarted(
+            _In_ SensorType sensorType);
 
         SensorFrame^ GetLatestSensorFrame(
             SensorType sensorType);
 
     private:
+        /// <summary>
+        /// Returns true if the sensor was explicitly enabled by the user.
+        /// </summary>
+        bool IsEnabled(
+            _In_ SensorType sensorType) const;
+
         /// <summary>
         /// Switch to the next eligible media source.
         /// </summary>
@@ -70,6 +88,7 @@ namespace HoloLensForCV
 
         std::vector<std::pair<Windows::Media::Capture::Frames::MediaFrameReader^, Windows::Foundation::EventRegistrationToken>> _frameEventRegistrations;
 
+        std::array<bool, (size_t)SensorType::NumberOfSensorTypes> _enabledFrameReaders;
         std::array<MediaFrameReaderContext^, (size_t)SensorType::NumberOfSensorTypes> _frameReaders;
 
         ISensorFrameSinkGroup^ _optionalSensorFrameSinkGroup;
