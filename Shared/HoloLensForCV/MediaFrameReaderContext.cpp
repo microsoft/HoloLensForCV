@@ -188,11 +188,11 @@ namespace HoloLensForCV
         {
             Platform::Object^ mfMtUserData =
                 frame->Properties->Lookup(c_MFSampleExtension_Spatial_CameraViewTransform);
-            Platform::Array<byte>^ cameraVBewTransformAsPlatformArray =
+            Platform::Array<byte>^ cameraViewTransformAsPlatformArray =
                 safe_cast<Platform::IBoxArray<byte>^>(mfMtUserData)->Value;
             sensorFrame->CameraViewTransform =
                 *reinterpret_cast<Windows::Foundation::Numerics::float4x4*>(
-                    cameraVBewTransformAsPlatformArray->Data);
+                    cameraViewTransformAsPlatformArray->Data);
 
 #if DBG_ENABLE_VERBOSE_LOGGING
             auto cameraViewTransform = sensorFrame->CameraViewTransform;
@@ -230,11 +230,11 @@ namespace HoloLensForCV
         {
             Platform::Object^ mfMtUserData =
                 frame->Properties->Lookup(c_MFSampleExtension_Spatial_CameraProjectionTransform);
-            Platform::Array<byte>^ cameraVBewTransformAsPlatformArray =
+            Platform::Array<byte>^ cameraProjectionTransformAsPlatformArray =
                 safe_cast<Platform::IBoxArray<byte>^>(mfMtUserData)->Value;
             sensorFrame->CameraProjectionTransform =
                 *reinterpret_cast<Windows::Foundation::Numerics::float4x4*>(
-                    cameraVBewTransformAsPlatformArray->Data);
+                    cameraProjectionTransformAsPlatformArray->Data);
 
 #if DBG_ENABLE_VERBOSE_LOGGING
             auto cameraProjectionTransform = sensorFrame->CameraProjectionTransform;
