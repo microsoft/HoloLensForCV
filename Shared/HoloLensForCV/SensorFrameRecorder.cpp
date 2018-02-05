@@ -112,6 +112,15 @@ namespace HoloLensForCV
 
             sensorFrameSink->Stop();
 
+        }
+
+        for (SensorFrameRecorderSink^ sensorFrameSink : _sensorFrameSinks)
+        {
+            if (nullptr == sensorFrameSink)
+            {
+                continue;
+            }
+
             sensorFrameSink->ReportArchiveSourceFiles(
                 sourceFiles);
         }
