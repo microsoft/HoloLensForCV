@@ -11,20 +11,10 @@
 
 #pragma once
 
+#include "pch.h"
+
 namespace HoloLensForCV
 {
-    //
-    // Subset of sensor frame metadata relevant to the recording process.
-    //
-    struct SensorFrameRecorderLogEntry
-    {
-        Windows::Foundation::DateTime Timestamp;
-        Windows::Foundation::Numerics::float4x4 FrameToOrigin;
-        Windows::Foundation::Numerics::float4x4 CameraViewTransform;
-        Windows::Foundation::Numerics::float4x4 CameraProjectionTransform;
-        std::wstring RelativeImagePath;
-    };
-
     //
     // Saves sensor images originated on device to disk and collects sensor frame
     // metadata that will be used to create the per-sensor recording manifest CSV
@@ -67,7 +57,7 @@ namespace HoloLensForCV
         Windows::Storage::StorageFolder^ _archiveSourceFolder;
         Windows::Storage::StorageFolder^ _dataArchiveSourceFolder;
 
-        std::vector<SensorFrameRecorderLogEntry> _recorderLog;
+        std::unique_ptr<CsvWriter> _csvWriter;
 
         CameraIntrinsics^ _cameraIntrinsics;
     };
