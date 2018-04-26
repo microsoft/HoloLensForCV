@@ -103,6 +103,15 @@ namespace HoloLensForCV
             });
     }
 
+	Windows::Foundation::IAsyncAction^ MediaFrameSourceGroup::StopAsync()
+	{
+		return concurrency::create_async(
+			[this]()
+		{
+			return CleanupMediaCaptureAsync();
+		});
+	}
+
     SensorFrame^ MediaFrameSourceGroup::GetLatestSensorFrame(
         SensorType sensorType)
     {

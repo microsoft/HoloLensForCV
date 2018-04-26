@@ -76,6 +76,8 @@ namespace Streamer
             L"AppMain::OnUpdate",
             30.0 /* minimum_time_elapsed_in_milliseconds */);
 
+		HoloLensForCV::SensorType renderSensorType = HoloLensForCV::SensorType::VisibleLightLeftFront;
+
         //
         // Update scene objects.
         //
@@ -114,21 +116,39 @@ namespace Streamer
                 4;
         }
 #if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
-        else
-        {
-            latestCameraPreviewFrame =
-                _holoLensMediaFrameSourceGroup->GetLatestSensorFrame(
-                    HoloLensForCV::SensorType::ShortThrowToFReflectivity);
+		else
+		{
+			latestCameraPreviewFrame =
+				_holoLensMediaFrameSourceGroup->GetLatestSensorFrame(
+					renderSensorType);
 
-            cameraPreviewExpectedBitmapPixelFormat =
-                Windows::Graphics::Imaging::BitmapPixelFormat::Gray8;
+			if ((HoloLensForCV::SensorType::ShortThrowToFDepth == renderSensorType) ||
+				(HoloLensForCV::SensorType::ShortThrowToFReflectivity == renderSensorType) ||
+				(HoloLensForCV::SensorType::LongThrowToFDepth == renderSensorType) ||
+				(HoloLensForCV::SensorType::LongThrowToFReflectivity == renderSensorType))
+			{
+				cameraPreviewExpectedBitmapPixelFormat =
+					Windows::Graphics::Imaging::BitmapPixelFormat::Gray8;
 
-            cameraPreviewTextureFormat =
-                DXGI_FORMAT_R8_UNORM;
+				cameraPreviewTextureFormat =
+					DXGI_FORMAT_R8_UNORM;
 
-            cameraPreviewPixelStride =
-                1;
-        }
+				cameraPreviewPixelStride =
+					1;
+			}
+			else
+			{
+				cameraPreviewExpectedBitmapPixelFormat =
+					Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8;
+
+				cameraPreviewTextureFormat =
+					DXGI_FORMAT_B8G8R8A8_UNORM;
+
+				cameraPreviewPixelStride =
+					4;
+			}
+		}
+
 #endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
 
         if (nullptr == latestCameraPreviewFrame)
@@ -236,6 +256,31 @@ namespace Streamer
 
         StartHoloLensMediaFrameSourceGroup();
     }
+
+	// Called when the application is suspending.
+	void AppMain::SaveAppState()
+	{
+		if (_holoLensMediaFrameSourceGroup == nullptr)
+			return;
+
+		concurrency::create_task(_holoLensMediaFrameSourceGroup->StopAsync()).then(
+			[&]()
+		{
+			delete _holoLensMediaFrameSourceGroup;
+			_holoLensMediaFrameSourceGroup = nullptr;
+			_holoLensMediaFrameSourceGroupStarted = false;
+
+			delete _sensorFrameStreamer;
+			_sensorFrameStreamer = nullptr;
+
+		}).wait();
+	}
+
+	// Called when the application is resuming.
+	void AppMain::LoadAppState()
+	{
+		StartHoloLensMediaFrameSourceGroup();
+	}
 
     void AppMain::StartHoloLensMediaFrameSourceGroup()
     {

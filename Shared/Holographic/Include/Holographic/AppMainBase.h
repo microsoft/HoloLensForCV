@@ -38,8 +38,8 @@ namespace Holographic
             Windows::Graphics::Holographic::HolographicFrame^ holographicFrame);
 
         // Handle saving and loading of app state owned by AppMain.
-        void SaveAppState();
-        void LoadAppState();
+        virtual void SaveAppState();
+        virtual void LoadAppState();
 
         // IDeviceNotify
         void OnDeviceLost() override;

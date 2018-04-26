@@ -39,6 +39,10 @@ namespace Streamer
 
         virtual void OnRender() override;
 
+		virtual void LoadAppState() override;
+
+		virtual void SaveAppState() override;
+
     private:
         // Initializes access to HoloLens sensors.
         void StartHoloLensMediaFrameSourceGroup();

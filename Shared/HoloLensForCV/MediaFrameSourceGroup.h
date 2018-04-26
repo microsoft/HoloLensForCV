@@ -31,6 +31,8 @@ namespace HoloLensForCV
 
         Windows::Foundation::IAsyncAction^ StartAsync();
 
+		Windows::Foundation::IAsyncAction^ StopAsync();
+
         /// <summary>
         /// Returns true if the sensor was explicitly enabled by the user *and* we have
         /// managed to actually enumerate and start it.
