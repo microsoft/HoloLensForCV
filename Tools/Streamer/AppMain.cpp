@@ -76,7 +76,9 @@ namespace Streamer
             L"AppMain::OnUpdate",
             30.0 /* minimum_time_elapsed_in_milliseconds */);
 
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
 		HoloLensForCV::SensorType renderSensorType = HoloLensForCV::SensorType::VisibleLightLeftFront;
+#endif
 
         //
         // Update scene objects.
