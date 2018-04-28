@@ -204,7 +204,7 @@ namespace ComputeOnDevice
             {
                 if (_cannyPVCameraImage.at<uint8_t>(y, x) > 64)
                 {
-                    _blurredPVCameraImage.at<uint32_t>(y, x) = 0xFFFF00FF;
+                    *(_blurredPVCameraImage.ptr<uint32_t>(y, x)) = 0xFFFF00FF;
                 }
             }
         }
