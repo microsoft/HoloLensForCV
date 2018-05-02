@@ -13,7 +13,7 @@
 
 namespace Io
 {
-    uint8_t* GetPointerToMemoryBuffer(
+    void* GetPointerToMemoryBuffer(
         _In_ Windows::Foundation::IMemoryBufferReference^ memoryBuffer,
         _Out_ uint32_t& memoryBufferLength)
     {
@@ -36,5 +36,28 @@ namespace Io
             &memoryBufferLength));
 
         return memoryBufferData;
+    }
+
+    void* GetPointerToIBuffer(
+        Windows::Storage::Streams::IBuffer^ buffer)
+    {
+        REQUIRES(
+            nullptr != buffer &&
+            0 < buffer->Length);
+
+        Microsoft::WRL::ComPtr<IUnknown> bufferAsIUnknown =
+            reinterpret_cast<IUnknown*>(buffer);
+
+        Microsoft::WRL::ComPtr<Windows::Storage::Streams::IBufferByteAccess> bufferByteAccess;
+
+        ASSERT_SUCCEEDED(bufferAsIUnknown.As(
+            &bufferByteAccess));
+
+        byte* rawData = nullptr;
+
+        ASSERT_SUCCEEDED(bufferByteAccess->Buffer(
+            &rawData));
+
+        return rawData;
     }
 }

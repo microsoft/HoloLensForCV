@@ -124,52 +124,68 @@ namespace ComputeOnDevice
         if (!_undistortMapsInitialized)
         {
             Windows::Media::Devices::Core::CameraIntrinsics^ cameraIntrinsics =
-                latestFrame->CameraIntrinsics;
+                latestFrame->CoreCameraIntrinsics;
 
-            cv::Mat cameraMatrix(3, 3, CV_64FC1);
+            if (nullptr != cameraIntrinsics)
+            {
+                cv::Mat cameraMatrix(3, 3, CV_64FC1);
 
-            cv::setIdentity(cameraMatrix);
+                cv::setIdentity(cameraMatrix);
 
-            cameraMatrix.at<double>(0, 0) = cameraIntrinsics->FocalLength.x;
-            cameraMatrix.at<double>(1, 1) = cameraIntrinsics->FocalLength.y;
-            cameraMatrix.at<double>(0, 2) = cameraIntrinsics->PrincipalPoint.x;
-            cameraMatrix.at<double>(1, 2) = cameraIntrinsics->PrincipalPoint.y;
+                cameraMatrix.at<double>(0, 0) = cameraIntrinsics->FocalLength.x;
+                cameraMatrix.at<double>(1, 1) = cameraIntrinsics->FocalLength.y;
+                cameraMatrix.at<double>(0, 2) = cameraIntrinsics->PrincipalPoint.x;
+                cameraMatrix.at<double>(1, 2) = cameraIntrinsics->PrincipalPoint.y;
 
-            cv::Mat distCoeffs(5, 1, CV_64FC1);
+                cv::Mat distCoeffs(5, 1, CV_64FC1);
 
-            distCoeffs.at<double>(0, 0) = cameraIntrinsics->RadialDistortion.x;
-            distCoeffs.at<double>(1, 0) = cameraIntrinsics->RadialDistortion.y;
-            distCoeffs.at<double>(2, 0) = cameraIntrinsics->TangentialDistortion.x;
-            distCoeffs.at<double>(3, 0) = cameraIntrinsics->TangentialDistortion.y;
-            distCoeffs.at<double>(4, 0) = cameraIntrinsics->RadialDistortion.z;
+                distCoeffs.at<double>(0, 0) = cameraIntrinsics->RadialDistortion.x;
+                distCoeffs.at<double>(1, 0) = cameraIntrinsics->RadialDistortion.y;
+                distCoeffs.at<double>(2, 0) = cameraIntrinsics->TangentialDistortion.x;
+                distCoeffs.at<double>(3, 0) = cameraIntrinsics->TangentialDistortion.y;
+                distCoeffs.at<double>(4, 0) = cameraIntrinsics->RadialDistortion.z;
 
-            cv::initUndistortRectifyMap(
-                cameraMatrix,
-                distCoeffs,
-                cv::Mat_<double>::eye(3, 3) /* R */,
-                cameraMatrix,
-                cv::Size(wrappedImage.cols, wrappedImage.rows),
-                CV_32FC1 /* type */,
-                _undistortMap1,
-                _undistortMap2);
+                cv::initUndistortRectifyMap(
+                    cameraMatrix,
+                    distCoeffs,
+                    cv::Mat_<double>::eye(3, 3) /* R */,
+                    cameraMatrix,
+                    cv::Size(wrappedImage.cols, wrappedImage.rows),
+                    CV_32FC1 /* type */,
+                    _undistortMap1,
+                    _undistortMap2);
 
-            _undistortMapsInitialized = true;
+                _undistortMapsInitialized = true;
+            }
         }
 
-        cv::remap(
-            wrappedImage,
-            _undistortedPVCameraImage,
-            _undistortMap1,
-            _undistortMap2,
-            cv::INTER_LINEAR);
+        if (_undistortMapsInitialized)
+        {
+            cv::remap(
+                wrappedImage,
+                _undistortedPVCameraImage,
+                _undistortMap1,
+                _undistortMap2,
+                cv::INTER_LINEAR);
 
-        cv::resize(
-            _undistortedPVCameraImage,
-            _resizedPVCameraImage,
-            cv::Size(),
-            0.5 /* fx */,
-            0.5 /* fy */,
-            cv::INTER_AREA);
+            cv::resize(
+                _undistortedPVCameraImage,
+                _resizedPVCameraImage,
+                cv::Size(),
+                0.5 /* fx */,
+                0.5 /* fy */,
+                cv::INTER_AREA);
+        }
+        else
+        {
+            cv::resize(
+                wrappedImage,
+                _resizedPVCameraImage,
+                cv::Size(),
+                0.5 /* fx */,
+                0.5 /* fy */,
+                cv::INTER_AREA);
+        }
 
         cv::medianBlur(
             _resizedPVCameraImage,
@@ -188,7 +204,7 @@ namespace ComputeOnDevice
             {
                 if (_cannyPVCameraImage.at<uint8_t>(y, x) > 64)
                 {
-                    _blurredPVCameraImage.at<uint32_t>(y, x) = 0xFFFF00FF;
+                    *(_blurredPVCameraImage.ptr<uint32_t>(y, x)) = 0xFFFF00FF;
                 }
             }
         }
@@ -264,6 +280,9 @@ namespace ComputeOnDevice
                 _selectedHoloLensMediaFrameSourceGroupType,
                 _spatialPerception,
                 _sensorFrameStreamer);
+
+        _holoLensMediaFrameSourceGroup->Enable(
+            HoloLensForCV::SensorType::PhotoVideo);
 
         concurrency::create_task(_holoLensMediaFrameSourceGroup->StartAsync()).then(
             [&]()

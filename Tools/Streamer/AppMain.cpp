@@ -28,8 +28,13 @@ namespace Streamer
     // Loads and initializes application assets when the application is loaded.
     AppMain::AppMain(const std::shared_ptr<Graphics::DeviceResources>& deviceResources)
         : Holographic::AppMainBase(deviceResources)
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+        , _selectedHoloLensMediaFrameSourceGroupType(
+            HoloLensForCV::MediaFrameSourceGroupType::HoloLensResearchModeSensors)
+#else
         , _selectedHoloLensMediaFrameSourceGroupType(
             HoloLensForCV::MediaFrameSourceGroupType::PhotoVideoCamera)
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
         , _holoLensMediaFrameSourceGroupStarted(false)
     {
     }
@@ -71,6 +76,10 @@ namespace Streamer
             L"AppMain::OnUpdate",
             30.0 /* minimum_time_elapsed_in_milliseconds */);
 
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+		HoloLensForCV::SensorType renderSensorType = HoloLensForCV::SensorType::VisibleLightLeftFront;
+#endif
+
         //
         // Update scene objects.
         //
@@ -86,9 +95,63 @@ namespace Streamer
             return;
         }
 
-        HoloLensForCV::SensorFrame^ latestCameraPreviewFrame =
-            _holoLensMediaFrameSourceGroup->GetLatestSensorFrame(
-                HoloLensForCV::SensorType::PhotoVideo);
+        HoloLensForCV::SensorFrame^ latestCameraPreviewFrame;
+        Windows::Graphics::Imaging::BitmapPixelFormat cameraPreviewExpectedBitmapPixelFormat;
+        DXGI_FORMAT cameraPreviewTextureFormat;
+        int32_t cameraPreviewPixelStride;
+
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+        if (HoloLensForCV::MediaFrameSourceGroupType::PhotoVideoCamera == _selectedHoloLensMediaFrameSourceGroupType)
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
+        {
+            latestCameraPreviewFrame =
+                _holoLensMediaFrameSourceGroup->GetLatestSensorFrame(
+                    HoloLensForCV::SensorType::PhotoVideo);
+
+            cameraPreviewExpectedBitmapPixelFormat =
+                Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8;
+
+            cameraPreviewTextureFormat =
+                DXGI_FORMAT_B8G8R8A8_UNORM;
+
+            cameraPreviewPixelStride =
+                4;
+        }
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+		else
+		{
+			latestCameraPreviewFrame =
+				_holoLensMediaFrameSourceGroup->GetLatestSensorFrame(
+					renderSensorType);
+
+			if ((HoloLensForCV::SensorType::ShortThrowToFDepth == renderSensorType) ||
+				(HoloLensForCV::SensorType::ShortThrowToFReflectivity == renderSensorType) ||
+				(HoloLensForCV::SensorType::LongThrowToFDepth == renderSensorType) ||
+				(HoloLensForCV::SensorType::LongThrowToFReflectivity == renderSensorType))
+			{
+				cameraPreviewExpectedBitmapPixelFormat =
+					Windows::Graphics::Imaging::BitmapPixelFormat::Gray8;
+
+				cameraPreviewTextureFormat =
+					DXGI_FORMAT_R8_UNORM;
+
+				cameraPreviewPixelStride =
+					1;
+			}
+			else
+			{
+				cameraPreviewExpectedBitmapPixelFormat =
+					Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8;
+
+				cameraPreviewTextureFormat =
+					DXGI_FORMAT_B8G8R8A8_UNORM;
+
+				cameraPreviewPixelStride =
+					4;
+			}
+		}
+
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
 
         if (nullptr == latestCameraPreviewFrame)
         {
@@ -104,12 +167,18 @@ namespace Streamer
 
         if (nullptr == _cameraPreviewTexture)
         {
+#if 0
+            dbg::trace(
+                L"latestCameraPreviewFrame->SoftwareBitmap->PixelWidth=0x%08x, latestCameraPreviewFrame->SoftwareBitmap->PixelHeight=0x%08x",
+                latestCameraPreviewFrame->SoftwareBitmap->PixelWidth, latestCameraPreviewFrame->SoftwareBitmap->PixelHeight);
+#endif
+
             _cameraPreviewTexture =
                 std::make_shared<Rendering::Texture2D>(
                     _deviceResources,
                     latestCameraPreviewFrame->SoftwareBitmap->PixelWidth,
                     latestCameraPreviewFrame->SoftwareBitmap->PixelHeight,
-                    DXGI_FORMAT_B8G8R8A8_UNORM);
+                    cameraPreviewTextureFormat);
         }
 
         {
@@ -120,7 +189,13 @@ namespace Streamer
             Windows::Graphics::Imaging::SoftwareBitmap^ bitmap =
                 latestCameraPreviewFrame->SoftwareBitmap;
 
-            REQUIRES(Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8 == bitmap->BitmapPixelFormat);
+#if 0
+            dbg::trace(
+                L"cameraPreviewExpectedBitmapPixelFormat=0x%08x, bitmap->BitmapPixelFormat=0x%08x",
+                cameraPreviewExpectedBitmapPixelFormat, bitmap->BitmapPixelFormat);
+#endif
+
+            REQUIRES(cameraPreviewExpectedBitmapPixelFormat == bitmap->BitmapPixelFormat);
 
             Windows::Graphics::Imaging::BitmapBuffer^ bitmapBuffer =
                 bitmap->LockBuffer(
@@ -129,20 +204,20 @@ namespace Streamer
             uint32_t pixelBufferDataLength = 0;
 
             uint8_t* pixelBufferData =
-                Io::GetPointerToMemoryBuffer(
+                Io::GetTypedPointerToMemoryBuffer<uint8_t>(
                     bitmapBuffer->CreateReference(),
                     pixelBufferDataLength);
 
             const int32_t bytesToCopy =
-                _cameraPreviewTexture->GetWidth() * _cameraPreviewTexture->GetHeight() * 4;
+                _cameraPreviewTexture->GetWidth() * _cameraPreviewTexture->GetHeight() * cameraPreviewPixelStride;
 
             ASSERT(static_cast<uint32_t>(bytesToCopy) == pixelBufferDataLength);
 
-            memcpy_s(
+            ASSERT(0 == memcpy_s(
                 mappedTexture,
                 bytesToCopy,
                 pixelBufferData,
-                pixelBufferDataLength);
+                pixelBufferDataLength));
 
             _cameraPreviewTexture->UnmapCPUTexture();
         }
@@ -184,19 +259,78 @@ namespace Streamer
         StartHoloLensMediaFrameSourceGroup();
     }
 
+	// Called when the application is suspending.
+	void AppMain::SaveAppState()
+	{
+		if (_holoLensMediaFrameSourceGroup == nullptr)
+			return;
+
+		concurrency::create_task(_holoLensMediaFrameSourceGroup->StopAsync()).then(
+			[&]()
+		{
+			delete _holoLensMediaFrameSourceGroup;
+			_holoLensMediaFrameSourceGroup = nullptr;
+			_holoLensMediaFrameSourceGroupStarted = false;
+
+			delete _sensorFrameStreamer;
+			_sensorFrameStreamer = nullptr;
+
+		}).wait();
+	}
+
+	// Called when the application is resuming.
+	void AppMain::LoadAppState()
+	{
+		StartHoloLensMediaFrameSourceGroup();
+	}
+
     void AppMain::StartHoloLensMediaFrameSourceGroup()
     {
+        std::vector<HoloLensForCV::SensorType> enabledSensorTypes;
+
+        //
+        // Enabling all of the Research Mode sensors at the same time can be quite expensive
+        // performance-wise. It's best to scope down the list of enabled sensors to just those
+        // that are required for a given task. In this example, we will select short-throw ToF
+        // depth and reflectivity, and the front pair of the visible light sensors.
+        //
+#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::ShortThrowToFReflectivity);
+
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::ShortThrowToFDepth);
+
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::VisibleLightLeftFront);
+
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::VisibleLightRightFront);
+#else
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::PhotoVideo);
+#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
+
         _sensorFrameStreamer =
             ref new HoloLensForCV::SensorFrameStreamer();
 
-        _sensorFrameStreamer->Enable(
-            HoloLensForCV::SensorType::PhotoVideo);
+        for (const auto enabledSensorType : enabledSensorTypes)
+        {
+            _sensorFrameStreamer->Enable(
+                enabledSensorType);
+        }
 
         _holoLensMediaFrameSourceGroup =
             ref new HoloLensForCV::MediaFrameSourceGroup(
                 _selectedHoloLensMediaFrameSourceGroupType,
                 _spatialPerception,
                 _sensorFrameStreamer);
+
+        for (const auto enabledSensorType : enabledSensorTypes)
+        {
+            _holoLensMediaFrameSourceGroup->Enable(
+                enabledSensorType);
+        }
 
         concurrency::create_task(_holoLensMediaFrameSourceGroup->StartAsync()).then(
             [&]()

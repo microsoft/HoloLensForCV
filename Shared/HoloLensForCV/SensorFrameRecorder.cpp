@@ -13,9 +13,7 @@
 
 namespace HoloLensForCV
 {
-    SensorFrameRecorder::SensorFrameRecorder(
-        _In_ SpatialPerception^ spatialPerception)
-        : _spatialPerception(spatialPerception)
+    SensorFrameRecorder::SensorFrameRecorder()
     {
     }
 
@@ -31,6 +29,8 @@ namespace HoloLensForCV
 #if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
         Enable(SensorType::ShortThrowToFDepth);
         Enable(SensorType::ShortThrowToFReflectivity);
+        Enable(SensorType::LongThrowToFDepth);
+        Enable(SensorType::LongThrowToFReflectivity);
         Enable(SensorType::VisibleLightLeftLeft);
         Enable(SensorType::VisibleLightLeftFront);
         Enable(SensorType::VisibleLightRightFront);
@@ -53,6 +53,7 @@ namespace HoloLensForCV
 
         SensorFrameRecorderSink^ sensorFrameSink =
             ref new SensorFrameRecorderSink(
+                sensorType,
                 ref new Platform::String(
                     GetSensorName(
                         sensorType)));
@@ -86,8 +87,7 @@ namespace HoloLensForCV
                             continue;
                         }
 
-                        sensorFrameSink->Start(
-                            _archiveSourceFolder);
+                        sensorFrameSink->Start(_archiveSourceFolder);
                     }
                 });
         });
@@ -146,25 +146,18 @@ namespace HoloLensForCV
 
             swprintf_s(
                 archiveName,
-                L"HoloLensRecording__%04i_%02i_%02i__%02i_%02i_%02i.tar",
+                L"HoloLensRecording__%04i_%02i_%02i__%02i_%02i_%02i",
                 timeNowUtc.tm_year + 1900,
-                timeNowUtc.tm_mon,
+                timeNowUtc.tm_mon + 1,
                 timeNowUtc.tm_mday,
                 timeNowUtc.tm_hour,
                 timeNowUtc.tm_min,
                 timeNowUtc.tm_sec);
 
-            Io::CreateTarball(
-                _archiveSourceFolder,
-                sourceFiles,
-                Windows::Storage::ApplicationData::Current->TemporaryFolder /* tarballFolder */,
-                archiveName);
+            Platform::String^ archiveNameString =
+                ref new Platform::String(archiveName);
+            _archiveSourceFolder->RenameAsync(archiveNameString);
         }
-
-        //
-        // We are now ready to delete the source folder.
-        //
-        _archiveSourceFolder->DeleteAsync();
 
         _archiveSourceFolder = nullptr;
     }
@@ -211,36 +204,7 @@ namespace HoloLensForCV
     void SensorFrameRecorder::ReportCameraCalibrationInformation(
         _Inout_ std::vector<std::wstring>& sourceFiles)
     {
-        wchar_t fileName[MAX_PATH] = {};
-
-        swprintf_s(
-            fileName,
-            L"%s\\camera_calibration.csv",
-            _archiveSourceFolder->Path->Data());
-
-        sourceFiles.push_back(
-            L"camera_calibration.csv");
-
-        CsvWriter csvWriter(
-            fileName);
-
-        {
-            std::vector<std::wstring> columns;
-
-            columns.push_back(L"SensorName");
-            columns.push_back(L"FocalLength.x");
-            columns.push_back(L"FocalLength.y");
-            columns.push_back(L"PrincipalPoint.x");
-            columns.push_back(L"PrincipalPoint.y");
-            columns.push_back(L"RadialDistortion.x");
-            columns.push_back(L"RadialDistortion.y");
-            columns.push_back(L"RadialDistortion.z");
-            columns.push_back(L"TangentialDistortion.x");
-            columns.push_back(L"TangentialDistortion.y");
-
-            csvWriter.WriteHeader(
-                columns);
-        }
+        //TODO: Support PV calibration
 
         for (SensorFrameRecorderSink^ sensorFrameSink : _sensorFrameSinks)
         {
@@ -257,49 +221,46 @@ namespace HoloLensForCV
                 continue;
             }
 
-            bool writeComma = false;
+            wchar_t fileName[MAX_PATH] = {};
 
-            csvWriter.WriteText(
-                sensorFrameSink->GetSensorName()->Data(),
-                &writeComma);
+            swprintf_s(
+                fileName,
+                L"%s\\%s_camera_space_projection.bin",
+                _archiveSourceFolder->Path->Data(),
+                sensorFrameSink->GetSensorName()->Data());
 
-            csvWriter.WriteDouble(
-                cameraIntrinsics->FocalLength.x,
-                &writeComma);
+            sourceFiles.push_back(fileName);
 
-            csvWriter.WriteDouble(
-                cameraIntrinsics->FocalLength.y,
-                &writeComma);
+            std::vector<Windows::Foundation::Point> pointList;
+            pointList.resize(cameraIntrinsics->ImageWidth * cameraIntrinsics->ImageHeight);
+            size_t index = 0;
+            for (unsigned int x = 0; x < cameraIntrinsics->ImageWidth; ++x)
+            {
+                for (unsigned int y = 0; y < cameraIntrinsics->ImageHeight; ++y)
+                {
+                    Windows::Foundation::Point uv = { float(x), float(y) }, xy;
+                    cameraIntrinsics->MapImagePointToCameraUnitPlane(uv, &xy);
+                    pointList[index++] = xy;
+                }
+            }
 
-            csvWriter.WriteDouble(
-                cameraIntrinsics->PrincipalPoint.x,
-                &writeComma);
+            //TODO: Better conversion to char*
+            std::wstring ws(fileName);
+            std::string outputFilePath;
+            outputFilePath.assign(ws.begin(), ws.end());
 
-            csvWriter.WriteDouble(
-                cameraIntrinsics->PrincipalPoint.y,
-                &writeComma);
+            FILE* file = nullptr;
+            ASSERT(0 == fopen_s(&file, outputFilePath.c_str(), "wb"));
 
-            csvWriter.WriteDouble(
-                cameraIntrinsics->RadialDistortion.x,
-                &writeComma);
+            size_t expectedSize = pointList.size() * sizeof(Windows::Foundation::Point);
+            ASSERT(expectedSize == fwrite(
+                reinterpret_cast<uint8_t*>(&pointList[0]),
+                sizeof(uint8_t),
+                expectedSize,
+                file));
 
-            csvWriter.WriteDouble(
-                cameraIntrinsics->RadialDistortion.y,
-                &writeComma);
+            ASSERT(0 == fclose(file));
 
-            csvWriter.WriteDouble(
-                cameraIntrinsics->RadialDistortion.z,
-                &writeComma);
-
-            csvWriter.WriteDouble(
-                cameraIntrinsics->TangentialDistortion.x,
-                &writeComma);
-
-            csvWriter.WriteDouble(
-                cameraIntrinsics->TangentialDistortion.y,
-                &writeComma);
-
-            csvWriter.EndLine();
         }
     }
 
@@ -340,6 +301,12 @@ namespace HoloLensForCV
 
         case SensorType::ShortThrowToFReflectivity:
             return L"short_throw_reflectivity";
+
+        case SensorType::LongThrowToFDepth:
+            return L"long_throw_depth";
+
+        case SensorType::LongThrowToFReflectivity:
+            return L"long_throw_reflectivity";
 
         case SensorType::VisibleLightLeftLeft:
             return L"vlc_ll";

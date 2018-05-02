@@ -24,6 +24,8 @@ namespace HoloLensForCV
 #if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
         Enable(SensorType::ShortThrowToFDepth);
         Enable(SensorType::ShortThrowToFReflectivity);
+        Enable(SensorType::LongThrowToFDepth);
+        Enable(SensorType::LongThrowToFReflectivity);
         Enable(SensorType::VisibleLightLeftLeft);
         Enable(SensorType::VisibleLightLeftFront);
         Enable(SensorType::VisibleLightRightFront);
@@ -50,6 +52,16 @@ namespace HoloLensForCV
         case SensorType::ShortThrowToFReflectivity:
             _sensorFrameStreamingServers[(int32_t)SensorType::ShortThrowToFReflectivity] =
                 ref new SensorFrameStreamingServer(L"23942");
+            break;
+
+        case SensorType::LongThrowToFDepth:
+            _sensorFrameStreamingServers[(int32_t)SensorType::LongThrowToFDepth] =
+                ref new SensorFrameStreamingServer(L"23947");
+            break;
+
+        case SensorType::LongThrowToFReflectivity:
+            _sensorFrameStreamingServers[(int32_t)SensorType::LongThrowToFReflectivity] =
+                ref new SensorFrameStreamingServer(L"23948");
             break;
 
         case SensorType::VisibleLightLeftLeft:

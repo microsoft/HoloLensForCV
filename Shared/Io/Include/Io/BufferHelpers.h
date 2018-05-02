@@ -13,7 +13,30 @@
 
 namespace Io
 {
-    uint8_t* GetPointerToMemoryBuffer(
+    void* GetPointerToMemoryBuffer(
         _In_ Windows::Foundation::IMemoryBufferReference^ memoryBuffer,
         _Out_ uint32_t& memoryBufferLength);
+
+    template <typename Ty>
+    Ty* GetTypedPointerToMemoryBuffer(
+        _In_ Windows::Foundation::IMemoryBufferReference^ memoryBuffer,
+        _Out_ uint32_t& memoryBufferLength)
+    {
+        return reinterpret_cast<Ty*>(
+            GetPointerToMemoryBuffer(
+                memoryBuffer,
+                memoryBufferLength));
+    }
+
+    void* GetPointerToIBuffer(
+        _In_ Windows::Storage::Streams::IBuffer^ buffer);
+
+    template <typename Ty>
+    Ty* GetTypedPointerToIBuffer(
+        Windows::Storage::Streams::IBuffer^ buffer)
+    {
+        return reinterpret_cast<Ty*>(
+            GetPointerToIBuffer(
+                buffer));
+    }
 }

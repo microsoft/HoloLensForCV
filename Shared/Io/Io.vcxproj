@@ -34,7 +34,7 @@
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
     <ApplicationType>Windows Store</ApplicationType>
-    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.14393.0</WindowsTargetPlatformMinVersion>
     <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
   </PropertyGroup>
@@ -236,7 +236,9 @@
     <ClInclude Include="Include\Io\StorageHandleAccess.h" />
     <ClInclude Include="Include\Io\StringHelpers.h" />
     <ClInclude Include="Include\Io\Tar.h" />
+    <ClInclude Include="Include\Io\Time.h" />
     <ClInclude Include="Include\Io\TimeConverter.h" />
+    <ClInclude Include="Include\Io\Timer.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -253,7 +255,9 @@
     </ClCompile>
     <ClCompile Include="StringHelpers.cpp" />
     <ClCompile Include="Tar.cpp" />
+    <ClCompile Include="Time.cpp" />
     <ClCompile Include="TimeConverter.cpp" />
+    <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />

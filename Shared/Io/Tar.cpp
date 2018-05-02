@@ -14,21 +14,6 @@
 namespace Io
 {
     //
-    // Conversion from universal time (counting the number of hundreds of nanoseconds relative
-    // to 00:00:00 UTC January 1, 1601) to Unix time (counting the number of seconds since the
-    // start of the epoch, 00:00:00 UTC January 1, 1970).
-    //
-    typedef std::chrono::duration<int64_t, std::ratio<1, 10'000'000>> c_hundreds_of_nanoseconds;
-
-    const std::chrono::seconds c_unix_epoch(11'644'473'600);
-
-    c_hundreds_of_nanoseconds UniversalToUnixTime(FILETIME Value)
-    {
-        return c_hundreds_of_nanoseconds(
-            Value.dwLowDateTime + (static_cast<uint64_t>(Value.dwHighDateTime) << 32)) - c_unix_epoch;
-    }
-
-    //
     // TAR (Tape Archive) header.
     //
     // See https://en.wikipedia.org/wiki/Tar_(computing) for details.

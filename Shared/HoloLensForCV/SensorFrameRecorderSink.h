@@ -20,6 +20,8 @@ namespace HoloLensForCV
     {
         Windows::Foundation::DateTime Timestamp;
         Windows::Foundation::Numerics::float4x4 FrameToOrigin;
+        Windows::Foundation::Numerics::float4x4 CameraViewTransform;
+        Windows::Foundation::Numerics::float4x4 CameraProjectionTransform;
         std::wstring RelativeImagePath;
     };
 
@@ -33,6 +35,7 @@ namespace HoloLensForCV
     {
     public:
         SensorFrameRecorderSink(
+            _In_ SensorType sensorType,
             _In_ Platform::String^ sensorName);
 
         void Start(
@@ -46,7 +49,7 @@ namespace HoloLensForCV
     internal:
         Platform::String^ GetSensorName();
 
-        Windows::Media::Devices::Core::CameraIntrinsics^ GetCameraIntrinsics();
+        CameraIntrinsics^ GetCameraIntrinsics();
 
         void ReportArchiveSourceFiles(
             _Inout_ std::vector<std::wstring>& sourceFiles);
@@ -57,12 +60,15 @@ namespace HoloLensForCV
     private:
         Platform::String^ _sensorName;
 
+        SensorType _sensorType;
+
         std::mutex _sinkMutex;
 
         Windows::Storage::StorageFolder^ _archiveSourceFolder;
+        Windows::Storage::StorageFolder^ _dataArchiveSourceFolder;
 
         std::vector<SensorFrameRecorderLogEntry> _recorderLog;
 
-        Windows::Media::Devices::Core::CameraIntrinsics^ _cameraIntrinsics;
+        CameraIntrinsics^ _cameraIntrinsics;
     };
 }

@@ -15,6 +15,8 @@
     <ClCompile Include="IoHelpers.cpp" />
     <ClCompile Include="TimeConverter.cpp" />
     <ClCompile Include="StringHelpers.cpp" />
+    <ClCompile Include="Time.cpp" />
+    <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -38,6 +40,12 @@
       <Filter>Include\Io</Filter>
     </ClInclude>
     <ClInclude Include="Include\Io\StringHelpers.h">
+      <Filter>Include\Io</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Io\Time.h">
+      <Filter>Include\Io</Filter>
+    </ClInclude>
+    <ClInclude Include="Include\Io\Timer.h">
       <Filter>Include\Io</Filter>
     </ClInclude>
   </ItemGroup>

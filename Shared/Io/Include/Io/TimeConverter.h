@@ -24,25 +24,28 @@ namespace Io
     public:
         TimeConverter();
 
-        uint64_t QpcToRelativeTicks(
-            _In_ const uint64_t qpc);
+        HundredsOfNanoseconds QpcToRelativeTicks(
+            _In_ const int64_t qpc) const;
 
-        uint64_t QpcToRelativeTicks(
-            _In_ const LARGE_INTEGER qpc);
+        HundredsOfNanoseconds QpcToRelativeTicks(
+            _In_ const LARGE_INTEGER qpc) const;
 
-        uint64_t FileTimeToAbsoluteTicks(
-            _In_ const FILETIME ft);
+        HundredsOfNanoseconds FileTimeToAbsoluteTicks(
+            _In_ const FILETIME ft) const;
 
-        uint64_t RelativeTicksToAbsoluteTicks(
-            _In_ const uint64_t ticks);
+        HundredsOfNanoseconds RelativeTicksToAbsoluteTicks(
+            _In_ const HundredsOfNanoseconds ticks) const;
 
-        uint64_t CalculateRelativeToAbsoluteTicksOffset();
+        HundredsOfNanoseconds CalculateRelativeToAbsoluteTicksOffset() const;
 
     private:
         void Initialize();
 
+        HundredsOfNanoseconds UnsignedQpcToRelativeTicks(
+            _In_ const uint64_t qpc) const;
+
     private:
         LARGE_INTEGER _qpf;
-        uint64_t _qpc2ft;
+        HundredsOfNanoseconds _qpc2ft;
     };
 }

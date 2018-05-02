@@ -14,8 +14,9 @@
 namespace HoloLensForCV
 {
     SensorFrameRecorderSink::SensorFrameRecorderSink(
+        _In_ SensorType sensorType,
         _In_ Platform::String^ sensorName)
-        : _sensorName(sensorName)
+        : _sensorType(sensorType), _sensorName(sensorName)
     {
     }
 
@@ -27,18 +28,29 @@ namespace HoloLensForCV
     void SensorFrameRecorderSink::Start(
         _In_ Windows::Storage::StorageFolder^ archiveSourceFolder)
     {
-        std::lock_guard<std::mutex> guard(
-            _sinkMutex);
 
-        REQUIRES(nullptr == _archiveSourceFolder);
+        // Remember the root folder for the recorded sensor meta-data.
 
-        _archiveSourceFolder = archiveSourceFolder;
+        {
+            std::lock_guard<std::mutex> guard(_sinkMutex);
+            REQUIRES(nullptr == _archiveSourceFolder);
+            _archiveSourceFolder = archiveSourceFolder;
+        }
+
+        // Create a sub-folder for the recorder sensor stream data.
+
+        concurrency::create_task(archiveSourceFolder->CreateFolderAsync(
+            _sensorName, Windows::Storage::CreationCollisionOption::ReplaceExisting)
+        ).then([&](Windows::Storage::StorageFolder^ dataArchiveSourceFolder) {
+            std::lock_guard<std::mutex> guard(_sinkMutex);
+            REQUIRES(nullptr == _dataArchiveSourceFolder);
+            _dataArchiveSourceFolder = dataArchiveSourceFolder;
+        });
     }
 
     void SensorFrameRecorderSink::Stop()
     {
-        std::lock_guard<std::mutex> guard(
-            _sinkMutex);
+        std::lock_guard<std::mutex> guard(_sinkMutex);
 
         {
             wchar_t fileName[MAX_PATH] = {};
@@ -63,6 +75,16 @@ namespace HoloLensForCV
                 columns.push_back(L"FrameToOrigin.m31"); columns.push_back(L"FrameToOrigin.m32"); columns.push_back(L"FrameToOrigin.m33"); columns.push_back(L"FrameToOrigin.m34");
                 columns.push_back(L"FrameToOrigin.m41"); columns.push_back(L"FrameToOrigin.m42"); columns.push_back(L"FrameToOrigin.m43"); columns.push_back(L"FrameToOrigin.m44");
 
+                columns.push_back(L"CameraViewTransform.m11"); columns.push_back(L"CameraViewTransform.m12"); columns.push_back(L"CameraViewTransform.m13"); columns.push_back(L"CameraViewTransform.m14");
+                columns.push_back(L"CameraViewTransform.m21"); columns.push_back(L"CameraViewTransform.m22"); columns.push_back(L"CameraViewTransform.m23"); columns.push_back(L"CameraViewTransform.m24");
+                columns.push_back(L"CameraViewTransform.m31"); columns.push_back(L"CameraViewTransform.m32"); columns.push_back(L"CameraViewTransform.m33"); columns.push_back(L"CameraViewTransform.m34");
+                columns.push_back(L"CameraViewTransform.m41"); columns.push_back(L"CameraViewTransform.m42"); columns.push_back(L"CameraViewTransform.m43"); columns.push_back(L"CameraViewTransform.m44");
+
+                columns.push_back(L"CameraProjectionTransform.m11"); columns.push_back(L"CameraProjectionTransform.m12"); columns.push_back(L"CameraProjectionTransform.m13"); columns.push_back(L"CameraProjectionTransform.m14");
+                columns.push_back(L"CameraProjectionTransform.m21"); columns.push_back(L"CameraProjectionTransform.m22"); columns.push_back(L"CameraProjectionTransform.m23"); columns.push_back(L"CameraProjectionTransform.m24");
+                columns.push_back(L"CameraProjectionTransform.m31"); columns.push_back(L"CameraProjectionTransform.m32"); columns.push_back(L"CameraProjectionTransform.m33"); columns.push_back(L"CameraProjectionTransform.m34");
+                columns.push_back(L"CameraProjectionTransform.m41"); columns.push_back(L"CameraProjectionTransform.m42"); columns.push_back(L"CameraProjectionTransform.m43"); columns.push_back(L"CameraProjectionTransform.m44");
+
                 csvWriter.WriteHeader(
                     columns);
             }
@@ -83,6 +105,14 @@ namespace HoloLensForCV
                     recorderLogEntry.FrameToOrigin,
                     &writeComma);
 
+                csvWriter.WriteFloat4x4(
+                    recorderLogEntry.CameraViewTransform,
+                    &writeComma);
+
+                csvWriter.WriteFloat4x4(
+                    recorderLogEntry.CameraProjectionTransform,
+                    &writeComma);
+
                 csvWriter.EndLine();
             }
         }
@@ -95,7 +125,7 @@ namespace HoloLensForCV
         return _sensorName;
     }
 
-    Windows::Media::Devices::Core::CameraIntrinsics^ SensorFrameRecorderSink::GetCameraIntrinsics()
+    CameraIntrinsics^ SensorFrameRecorderSink::GetCameraIntrinsics()
     {
         return _cameraIntrinsics;
     }
@@ -127,10 +157,9 @@ namespace HoloLensForCV
             L"SensorFrameRecorderSink::Send: synchrounous I/O",
             20.0 /* minimum_time_elapsed_in_milliseconds */);
 
-        std::lock_guard<std::mutex> lockGuard(
-            _sinkMutex);
+        std::lock_guard<std::mutex> lockGuard(_sinkMutex);
 
-        if (nullptr == _archiveSourceFolder)
+        if (nullptr == _archiveSourceFolder || nullptr == _dataArchiveSourceFolder)
         {
             return;
         }
@@ -141,7 +170,7 @@ namespace HoloLensForCV
         if (nullptr == _cameraIntrinsics)
         {
             _cameraIntrinsics =
-                sensorFrame->CameraIntrinsics;
+                sensorFrame->SensorStreamingCameraIntrinsics;
         }
 
         //
@@ -152,8 +181,8 @@ namespace HoloLensForCV
 
         sprintf_s(
             absolutePath,
-            "%S\\%020llu_%S.raw",
-            _archiveSourceFolder->Path->Data(),
+            "%S\\%020llu_%S.pgm",
+            _dataArchiveSourceFolder->Path->Data(),
             sensorFrame->Timestamp.UniversalTime,
             _sensorName->Data());
 
@@ -171,6 +200,60 @@ namespace HoloLensForCV
 
             ASSERT(0 == fopen_s(&file, absolutePath, "wb"));
 
+            int maxValue = 0;
+            int actualPixelWidth = softwareBitmap->PixelWidth;
+            switch (softwareBitmap->BitmapPixelFormat)
+            {
+
+            case Windows::Graphics::Imaging::BitmapPixelFormat::Gray16:
+                maxValue = 65535;
+                break;
+
+            case Windows::Graphics::Imaging::BitmapPixelFormat::Gray8:
+                maxValue = 255;
+                break;
+
+            case Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8:
+                if ((_sensorType == SensorType::VisibleLightLeftFront) ||
+                    (_sensorType == SensorType::VisibleLightLeftLeft) ||
+                    (_sensorType == SensorType::VisibleLightRightFront) ||
+                    (_sensorType == SensorType::VisibleLightRightRight))
+                {
+                    maxValue = 255;
+                    actualPixelWidth = actualPixelWidth * 4;
+                }
+                else
+                {
+                    ASSERT(false);
+                }
+
+                break;
+
+            default:
+                // Unsupported by PGM format. Need to update save logic
+#if DBG_ENABLE_INFORMATIONAL_LOGGING
+                dbg::trace(
+                    L"SensorFrameRecorderSink::Send: unsupported bitmap pixel format for PGM");
+#endif /* DBG_ENABLE_INFORMATIONAL_LOGGING */
+
+                ASSERT(false);
+                break;
+            }
+
+            // Write Header 
+            std::stringstream header;
+            header << "P5\n"
+                << actualPixelWidth << " "
+                << softwareBitmap->PixelHeight << "\n"
+                << maxValue << "\n";
+
+            std::string headerString = header.str();
+            ASSERT(headerString.size() == fwrite(
+                headerString.c_str(),
+                sizeof(uint8_t) /* _ElementSize */,
+                headerString.size() /* _ElementCount */,
+                file));
+
             Windows::Graphics::Imaging::BitmapBuffer^ bitmapBuffer =
                 softwareBitmap->LockBuffer(
                     Windows::Graphics::Imaging::BitmapBufferAccessMode::Read);
@@ -178,7 +261,7 @@ namespace HoloLensForCV
             uint32_t pixelBufferDataLength = 0;
 
             uint8_t* pixelBufferData =
-                Io::GetPointerToMemoryBuffer(
+                Io::GetTypedPointerToMemoryBuffer<uint8_t>(
                     bitmapBuffer->CreateReference(),
                     pixelBufferDataLength);
 
@@ -200,6 +283,12 @@ namespace HoloLensForCV
 
             recorderLogEntry.FrameToOrigin =
                 sensorFrame->FrameToOrigin;
+
+            recorderLogEntry.CameraViewTransform =
+                sensorFrame->CameraViewTransform;
+
+            recorderLogEntry.CameraProjectionTransform =
+                sensorFrame->CameraProjectionTransform;
 
             {
                 wchar_t relativePath[MAX_PATH] = {};

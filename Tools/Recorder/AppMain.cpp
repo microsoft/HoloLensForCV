@@ -12,6 +12,9 @@
 #include "pch.h"
 #include "AppMain.h"
 
+//#define RECORDER_USE_SPEECH
+//#define ENABLE_RENDERING
+
 using namespace Windows::Foundation;
 using namespace Windows::Foundation::Numerics;
 using namespace Windows::Networking;
@@ -26,10 +29,11 @@ namespace Recorder
 {
     AppMain::AppMain(const std::shared_ptr<Graphics::DeviceResources>& deviceResources)
         : Holographic::AppMainBase(deviceResources)
-        , _lastVoiceCommand(nullptr)
-        , _photoVideoMediaFrameSourceGroupStarted(false)
+        , _speechSynthesizer(ref new Windows::Media::SpeechSynthesis::SpeechSynthesizer())
+        , _mediaFrameSourceGroupStarted(false)
         , _sensorFrameRecorderStarted(false)
         , _cameraPreviewTimestamp()
+        , _maxTimeToRecordInSeconds(0)
     {
     }
 
@@ -48,27 +52,38 @@ namespace Recorder
         //
         StartHoloLensMediaFrameSourceGroup();
 
-        //
-        // Start the voice UI prompt.
-        //
-        BeginVoiceUIPrompt();
-
-        //
-        // Start the speech recognizer.
-        //
+#ifdef RECORDER_USE_SPEECH
         StartRecognizeSpeechCommands();
+        Platform::StringReference startSentence =
+            L"Say 'start' to begin, and 'stop' to end recording.";
+#else
+        Platform::StringReference startSentence =
+            L"Air tap to begin and end recording";
+#endif
+        SaySentence(startSentence);
     }
 
     void AppMain::OnSpatialInput(
         _In_ Windows::UI::Input::Spatial::SpatialInteractionSourceState^ pointerState)
     {
-        Windows::Perception::Spatial::SpatialCoordinateSystem^ currentCoordinateSystem =
-            _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem;
-
+#ifdef ENABLE_RENDERING
         // When a Pressed gesture is detected, the sample hologram will be repositioned
         // two meters in front of the user.
+        Windows::Perception::Spatial::SpatialCoordinateSystem^ currentCoordinateSystem =
+            _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem;
         _slateRenderer->PositionHologram(
             pointerState->TryGetPointerPose(currentCoordinateSystem));
+#endif 
+
+#ifndef RECORDER_USE_SPEECH
+        if (_sensorFrameRecorderStarted) {
+            concurrency::create_async([&]() { StopRecording(); });
+        }
+        else
+        {
+            concurrency::create_async([&]() { StartRecording(); });
+        }
+#endif // ! RECORDER_USE_SPEECH
     }
 
     // Updates the application state once per frame.
@@ -82,6 +97,7 @@ namespace Recorder
             L"AppMain::OnUpdate",
             30.0 /* minimum_time_elapsed_in_milliseconds */);
 
+#ifdef ENABLE_RENDERING
         //
         // Update scene objects.
         //
@@ -91,48 +107,33 @@ namespace Recorder
         //
         _slateRenderer->Update(
             stepTimer);
+#else
+        UNREFERENCED_PARAMETER(stepTimer);
+#endif
 
-        //
-        // Check for the voice commands.
-        //
-        if (_lastVoiceCommand == L"start")
+        // Check for timer elapse
+        if (_sensorFrameRecorderStarted && (_maxTimeToRecordInSeconds != 0))
         {
-            if (!_sensorFrameRecorderStarted)
+            unsigned int elapsedTime = (int)(_recordTimer.GetMillisecondsFromStart() / 1000.0);
+            if (elapsedTime >= _maxTimeToRecordInSeconds)
             {
-                auto sensorFrameRecorderStartAsyncTask =
-                    concurrency::create_task(
-                        _sensorFrameRecorder->StartAsync());
-
-                sensorFrameRecorderStartAsyncTask.then(
-                    [&]()
-                {
-                    _sensorFrameRecorderStarted = true;
-                });
+                concurrency::create_async([&]() { StopRecording(); });
             }
         }
-        else if (_lastVoiceCommand == L"stop")
-        {
-            if (_sensorFrameRecorderStarted)
-            {
-                _sensorFrameRecorder->Stop();
-
-                _sensorFrameRecorderStarted = false;
-            }
-        }
-
-        _lastVoiceCommand = nullptr;
 
         //
         // Process sensor data received through the HoloLensForCV component.
         //
-        if (!_photoVideoMediaFrameSourceGroupStarted)
+        if (!_mediaFrameSourceGroupStarted)
         {
             return;
         }
 
+// TODO: Enable camera preview based on sensor selection
+#ifdef ENABLE_RENDERING
         HoloLensForCV::SensorFrame^ latestCameraPreviewFrame =
-            _photoVideoMediaFrameSourceGroup->GetLatestSensorFrame(
-                HoloLensForCV::SensorType::PhotoVideo);
+            _mediaFrameSourceGroup->GetLatestSensorFrame(
+                HoloLensForCV::SensorType::ShortThrowToFReflectivity);
 
         if (nullptr == latestCameraPreviewFrame)
         {
@@ -173,7 +174,7 @@ namespace Recorder
             uint32_t pixelBufferDataLength = 0;
 
             uint8_t* pixelBufferData =
-                Io::GetPointerToMemoryBuffer(
+                Io::GetTypedPointerToMemoryBuffer<uint8_t>(
                     bitmapBuffer->CreateReference(),
                     pixelBufferDataLength);
 
@@ -192,6 +193,7 @@ namespace Recorder
         }
 
         _cameraPreviewTexture->CopyCPU2GPU();
+#endif
     }
 
     void AppMain::OnPreRender()
@@ -202,83 +204,67 @@ namespace Recorder
     // current application and spatial positioning state.
     void AppMain::OnRender()
     {
+#ifdef ENABLE_RENDERING
         // Draw the sample hologram.
         _slateRenderer->Render(
             _cameraPreviewTexture);
+#endif
     }
 
     // Notifies classes that use Direct3D device resources that the device resources
     // need to be released before this method returns.
     void AppMain::OnDeviceLost()
     {
+#ifdef ENABLE_RENDERING
         _slateRenderer->ReleaseDeviceDependentResources();
-
-        _photoVideoMediaFrameSourceGroup = nullptr;
-        _photoVideoMediaFrameSourceGroupStarted = false;
-
-        _sensorFrameRecorder = nullptr;
-        _sensorFrameRecorderStarted = false;
-
         _cameraPreviewTexture.reset();
         _cameraPreviewTimestamp.UniversalTime = 0;
+#endif
     }
 
     // Notifies classes that use Direct3D device resources that the device resources
     // may now be recreated.
     void AppMain::OnDeviceRestored()
     {
+#ifdef ENABLE_RENDERING
         _slateRenderer->CreateDeviceDependentResources();
-
-        StartHoloLensMediaFrameSourceGroup();
+#endif
     }
 
-    void AppMain::BeginVoiceUIPrompt()
+    void AppMain::StartRecording()
     {
-        auto speechSynthesizer =
-            ref new Windows::Media::SpeechSynthesis::SpeechSynthesizer();
-
-        Platform::StringReference voicePrompt =
-            L"Say 'start' to begin, and 'stop' to end recording.";
-
-        concurrency::create_task(
-            speechSynthesizer->SynthesizeTextToStreamAsync(voicePrompt),
-            concurrency::task_continuation_context::use_current()).
-            then([this, speechSynthesizer](
-                concurrency::task<Windows::Media::SpeechSynthesis::SpeechSynthesisStream^> synthesisStreamTask)
+        std::unique_lock<std::mutex> lock(_startStopRecordingMutex);
+        
+        if (!_mediaFrameSourceGroupStarted || _sensorFrameRecorderStarted)
         {
-            try
-            {
-                auto stream =
-                    synthesisStreamTask.get();
+            return;
+        }
 
-                auto hr =
-                    _speechSynthesisSound.Initialize(
-                        stream,
-                        0 /* loopCount */);
+        SaySentence(Platform::StringReference(L"Beginning recording"));
 
-                if (SUCCEEDED(hr))
-                {
-                    _speechSynthesisSound.SetEnvironment(HrtfEnvironment::Small);
-                    _speechSynthesisSound.Start();
+        auto sensorFrameRecorderStartAsyncTask =
+            concurrency::create_task(
+                _sensorFrameRecorder->StartAsync());
 
-#if 0
-                    // Amount of time to pause after the audio prompt is complete, before listening 
-                    // for speech input.
-                    static const float bufferTime = 0.15f;
-
-                    // Wait until the prompt is done before listening.
-                    _secondsUntilSoundIsComplete = _speechSynthesisSound.GetDuration() + bufferTime;
-                    _waitingForSpeechPrompt = true;
-#endif
-                }
-            }
-            catch (Platform::Exception^ exception)
-            {
-                dbg::trace(
-                    L"Exception while trying to synthesize speech: %s",
-                    exception->Message->Data());
-            }
+        sensorFrameRecorderStartAsyncTask.then([&]()
+        {
+            _sensorFrameRecorderStarted = true;
         });
+    }
+
+    void AppMain::StopRecording()
+    {
+        std::unique_lock<std::mutex> lock(_startStopRecordingMutex);
+
+        if (!_mediaFrameSourceGroupStarted || !_sensorFrameRecorderStarted)
+        {
+            return;
+        }
+
+        SaySentence(Platform::StringReference(L"Ending recording"));
+
+        _sensorFrameRecorder->Stop();
+        _sensorFrameRecorderStarted = false;
     }
 
     concurrency::task<void> AppMain::StopCurrentRecognizerIfExists()
@@ -408,6 +394,39 @@ namespace Recorder
         });
     }
 
+    void AppMain::SaySentence(Platform::StringReference sentence)
+    {
+        concurrency::create_task(
+            _speechSynthesizer->SynthesizeTextToStreamAsync(sentence),
+            concurrency::task_continuation_context::use_current()).
+            then([this](
+                concurrency::task<Windows::Media::SpeechSynthesis::SpeechSynthesisStream^> synthesisStreamTask)
+        {
+            try
+            {
+                auto stream =
+                    synthesisStreamTask.get();
+
+                auto hr =
+                    _speechSynthesisSound.Initialize(
+                        stream,
+                        0 /* loopCount */);
+
+                if (SUCCEEDED(hr))
+                {
+                    _speechSynthesisSound.SetEnvironment(HrtfEnvironment::Small);
+                    _speechSynthesisSound.Start();
+                }
+            }
+            catch (Platform::Exception^ exception)
+            {
+                dbg::trace(
+                    L"Exception while trying to synthesize speech: %s",
+                    exception->Message->Data());
+            }
+        });
+    }
+
     void AppMain::OnResultGenerated(
         Windows::Media::SpeechRecognition::SpeechContinuousRecognitionSession ^sender,
         Windows::Media::SpeechRecognition::SpeechContinuousRecognitionResultGeneratedEventArgs ^args)
@@ -417,16 +436,19 @@ namespace Recorder
         if ((args->Result->Confidence == Windows::Media::SpeechRecognition::SpeechRecognitionConfidence::High) ||
             (args->Result->Confidence == Windows::Media::SpeechRecognition::SpeechRecognitionConfidence::Medium))
         {
-            _lastVoiceCommand =
-                args->Result->Text;
+            if (args->Result->Text == L"start")
+            {
+                concurrency::create_async([&]() { StartRecording(); });
+            }
+            else if (args->Result->Text == L"stop")
+            {
+                concurrency::create_async([&]() { StopRecording(); });
+            }
 
             // When the debugger is attached, we can print information to the debug console.
             dbg::trace(
                 L"Last voice command was: '%s'",
                 args->Result->Text->Data());
-
-            // Play a sound to indicate a command was understood.
-            PlayVoiceCommandRecognitionSound();
         }
         else
         {
@@ -492,32 +514,60 @@ namespace Recorder
 
     void AppMain::StartHoloLensMediaFrameSourceGroup()
     {
+        std::vector<HoloLensForCV::SensorType> enabledSensorTypes;
+
+        //
+        // Enabling all of the Research Mode sensors at the same time can be quite expensive
+        // performance-wise. It's best to scope down the list of enabled sensors to just those
+        // that are required for a given task. In this example, we will select just the visible
+        // light sensors.
+        //
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::VisibleLightLeftLeft);
+
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::VisibleLightLeftFront);
+
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::VisibleLightRightFront);
+
+        enabledSensorTypes.emplace_back(
+            HoloLensForCV::SensorType::VisibleLightRightRight);
+
         REQUIRES(
-            !_photoVideoMediaFrameSourceGroupStarted &&
+            !_mediaFrameSourceGroupStarted &&
             !_sensorFrameRecorderStarted &&
             nullptr != _spatialPerception);
 
         _sensorFrameRecorder =
-            ref new HoloLensForCV::SensorFrameRecorder(
-                _spatialPerception);
+            ref new HoloLensForCV::SensorFrameRecorder();
 
-        _sensorFrameRecorder->Enable(
-            HoloLensForCV::SensorType::PhotoVideo);
+        for (const auto enabledSensorType : enabledSensorTypes)
+        {
+            _sensorFrameRecorder->Enable(
+                enabledSensorType);
+        }
 
-        _photoVideoMediaFrameSourceGroup =
+        _mediaFrameSourceGroup =
             ref new HoloLensForCV::MediaFrameSourceGroup(
-                HoloLensForCV::MediaFrameSourceGroupType::PhotoVideoCamera,
+                HoloLensForCV::MediaFrameSourceGroupType::HoloLensResearchModeSensors,
                 _spatialPerception,
                 _sensorFrameRecorder);
 
-        auto photoVideoStartAsyncTask =
-            concurrency::create_task(
-                _photoVideoMediaFrameSourceGroup->StartAsync());
+        for (const auto enabledSensorType : enabledSensorTypes)
+        {
+            _mediaFrameSourceGroup->Enable(
+                enabledSensorType);
+        }
 
-        photoVideoStartAsyncTask.then(
+        auto captureSartAsyncTask =
+            concurrency::create_task(
+                _mediaFrameSourceGroup->StartAsync());
+
+        captureSartAsyncTask.then(
             [&]()
         {
-            _photoVideoMediaFrameSourceGroupStarted = true;
+            _mediaFrameSourceGroupStarted = true;
         });
     }
 }
