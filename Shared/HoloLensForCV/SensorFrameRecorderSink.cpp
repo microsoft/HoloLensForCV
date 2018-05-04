@@ -45,14 +45,7 @@ namespace HoloLensForCV
             std::lock_guard<std::mutex> guard(_sinkMutex);
             REQUIRES(nullptr == _dataArchiveSourceFolder);
             _dataArchiveSourceFolder = dataArchiveSourceFolder;
-        });
-    }
 
-    void SensorFrameRecorderSink::Stop()
-    {
-        std::lock_guard<std::mutex> guard(_sinkMutex);
-
-        {
             wchar_t fileName[MAX_PATH] = {};
 
             swprintf_s(
@@ -61,8 +54,7 @@ namespace HoloLensForCV
                 _archiveSourceFolder->Path->Data(),
                 _sensorName->Data());
 
-            CsvWriter csvWriter(
-                fileName);
+            _csvWriter.reset(new CsvWriter(fileName));
 
             {
                 std::vector<std::wstring> columns;
@@ -85,38 +77,16 @@ namespace HoloLensForCV
                 columns.push_back(L"CameraProjectionTransform.m31"); columns.push_back(L"CameraProjectionTransform.m32"); columns.push_back(L"CameraProjectionTransform.m33"); columns.push_back(L"CameraProjectionTransform.m34");
                 columns.push_back(L"CameraProjectionTransform.m41"); columns.push_back(L"CameraProjectionTransform.m42"); columns.push_back(L"CameraProjectionTransform.m43"); columns.push_back(L"CameraProjectionTransform.m44");
 
-                csvWriter.WriteHeader(
-                    columns);
+                _csvWriter->WriteHeader(columns);
             }
 
-            for (const auto& recorderLogEntry : _recorderLog)
-            {
-                bool writeComma = false;
+        });
+    }
 
-                csvWriter.WriteUInt64(
-                    recorderLogEntry.Timestamp.UniversalTime,
-                    &writeComma);
-
-                csvWriter.WriteText(
-                    recorderLogEntry.RelativeImagePath,
-                    &writeComma);
-
-                csvWriter.WriteFloat4x4(
-                    recorderLogEntry.FrameToOrigin,
-                    &writeComma);
-
-                csvWriter.WriteFloat4x4(
-                    recorderLogEntry.CameraViewTransform,
-                    &writeComma);
-
-                csvWriter.WriteFloat4x4(
-                    recorderLogEntry.CameraProjectionTransform,
-                    &writeComma);
-
-                csvWriter.EndLine();
-            }
-        }
-
+    void SensorFrameRecorderSink::Stop()
+    {
+        std::lock_guard<std::mutex> guard(_sinkMutex);
+        _csvWriter.reset();
         _archiveSourceFolder = nullptr;
     }
 
@@ -140,14 +110,7 @@ namespace HoloLensForCV
             L"%s.csv",
             _sensorName->Data());
 
-        sourceFiles.push_back(
-            csvFileName);
-
-        for (const auto& recorderLogEntry : _recorderLog)
-        {
-            sourceFiles.push_back(
-                recorderLogEntry.RelativeImagePath);
-        }
+        sourceFiles.push_back(csvFileName);
     }
 
     void SensorFrameRecorderSink::Send(
@@ -275,36 +238,38 @@ namespace HoloLensForCV
                 file));
         }
 
+        bool writeComma = false;
+
+        _csvWriter->WriteUInt64(
+            sensorFrame->Timestamp.UniversalTime,
+            &writeComma);
+
         {
-            SensorFrameRecorderLogEntry recorderLogEntry;
+            wchar_t relativePath[MAX_PATH] = {};
 
-            recorderLogEntry.Timestamp =
-                sensorFrame->Timestamp;
+            swprintf_s(
+                relativePath,
+                L"%020llu_%s.raw",
+                sensorFrame->Timestamp.UniversalTime,
+                _sensorName->Data());
 
-            recorderLogEntry.FrameToOrigin =
-                sensorFrame->FrameToOrigin;
-
-            recorderLogEntry.CameraViewTransform =
-                sensorFrame->CameraViewTransform;
-
-            recorderLogEntry.CameraProjectionTransform =
-                sensorFrame->CameraProjectionTransform;
-
-            {
-                wchar_t relativePath[MAX_PATH] = {};
-
-                swprintf_s(
-                    relativePath,
-                    L"%020llu_%s.raw",
-                    sensorFrame->Timestamp.UniversalTime,
-                    _sensorName->Data());
-
-                recorderLogEntry.RelativeImagePath =
-                    std::wstring(relativePath);
-            }
-
-            _recorderLog.emplace_back(
-                std::move(recorderLogEntry));
+            _csvWriter->WriteText(
+                relativePath,
+                &writeComma);
         }
+
+        _csvWriter->WriteFloat4x4(
+            sensorFrame->FrameToOrigin,
+            &writeComma);
+
+        _csvWriter->WriteFloat4x4(
+            sensorFrame->CameraViewTransform,
+            &writeComma);
+
+        _csvWriter->WriteFloat4x4(
+            sensorFrame->CameraProjectionTransform,
+            &writeComma);
+
+        _csvWriter->EndLine();
     }
 }
