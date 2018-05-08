@@ -127,7 +127,7 @@ namespace HoloLensForCV
         static const Platform::Guid c_MFSampleExtension_Spatial_CameraCoordinateSystem(0x9d13c82f, 0x2199, 0x4e67, 0x91, 0xcd, 0xd1, 0xa4, 0x18, 0x1f, 0x25, 0x34);
 
         Windows::Perception::Spatial::SpatialCoordinateSystem^ frameCoordinateSystem = nullptr;
-        
+
         if (frame->Properties->HasKey(c_MFSampleExtension_Spatial_CameraCoordinateSystem))
         {
             frameCoordinateSystem = safe_cast<Windows::Perception::Spatial::SpatialCoordinateSystem^>(
@@ -188,11 +188,11 @@ namespace HoloLensForCV
         {
             Platform::Object^ mfMtUserData =
                 frame->Properties->Lookup(c_MFSampleExtension_Spatial_CameraViewTransform);
-            Platform::Array<byte>^ cameraVBewTransformAsPlatformArray =
+            Platform::Array<byte>^ cameraViewTransformAsPlatformArray =
                 safe_cast<Platform::IBoxArray<byte>^>(mfMtUserData)->Value;
             sensorFrame->CameraViewTransform =
                 *reinterpret_cast<Windows::Foundation::Numerics::float4x4*>(
-                    cameraVBewTransformAsPlatformArray->Data);
+                    cameraViewTransformAsPlatformArray->Data);
 
 #if DBG_ENABLE_VERBOSE_LOGGING
             auto cameraViewTransform = sensorFrame->CameraViewTransform;
@@ -230,11 +230,11 @@ namespace HoloLensForCV
         {
             Platform::Object^ mfMtUserData =
                 frame->Properties->Lookup(c_MFSampleExtension_Spatial_CameraProjectionTransform);
-            Platform::Array<byte>^ cameraVBewTransformAsPlatformArray =
+            Platform::Array<byte>^ cameraViewTransformAsPlatformArray =
                 safe_cast<Platform::IBoxArray<byte>^>(mfMtUserData)->Value;
             sensorFrame->CameraProjectionTransform =
                 *reinterpret_cast<Windows::Foundation::Numerics::float4x4*>(
-                    cameraVBewTransformAsPlatformArray->Data);
+                    cameraViewTransformAsPlatformArray->Data);
 
 #if DBG_ENABLE_VERBOSE_LOGGING
             auto cameraProjectionTransform = sensorFrame->CameraProjectionTransform;
@@ -274,7 +274,7 @@ namespace HoloLensForCV
 
             //
             // The visible light camera images are grayscale, but packed as 32bpp ARGB images.
-            // 
+            //
             unsigned int imageWidth = softwareBitmap->PixelWidth;
 
             if ((_sensorType == SensorType::VisibleLightLeftFront) ||
