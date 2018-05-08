@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props" Condition="Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props')" />
+  <Import Project="$(SolutionDir)\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.props" Condition="Exists('$(SolutionDir)\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.props')" />
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|ARM">
       <Configuration>Debug</Configuration>
@@ -35,8 +35,8 @@
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
     <ApplicationType>Windows Store</ApplicationType>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
-    <WindowsTargetPlatformMinVersion>10.0.14393.0</WindowsTargetPlatformMinVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.17134.0</WindowsTargetPlatformMinVersion>
     <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -262,13 +262,12 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets" Condition="Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets')" />
+    <Import Project="..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets" Condition="Exists('..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props'))" />
-    <Error Condition="!Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets'))" />
+    <Error Condition="!Exists('..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets'))" />
   </Target>
 </Project>

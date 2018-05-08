@@ -42,7 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Recorder_TemporaryKey.pfx" />
-    <None Include="packages.config" />
     <None Include="README.md" />
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

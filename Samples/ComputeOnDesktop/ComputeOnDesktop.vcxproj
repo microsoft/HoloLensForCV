@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props" Condition="Exists('..\..\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props')" />
   <PropertyGroup Label="Globals">
     <ProjectGuid>{75fbefaa-5523-47e5-b8ec-6cbccd9a26dc}</ProjectGuid>
     <RootNamespace>ComputeOnDesktop</RootNamespace>
@@ -8,8 +7,8 @@
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
     <ApplicationType>Windows Store</ApplicationType>
-    <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.16299.0</WindowsTargetPlatformVersion>
-    <WindowsTargetPlatformMinVersion>10.0.14393.0</WindowsTargetPlatformMinVersion>
+    <WindowsTargetPlatformVersion Condition=" '$(WindowsTargetPlatformVersion)' == '' ">10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.17134.0</WindowsTargetPlatformMinVersion>
     <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -250,7 +249,6 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\..\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets" Condition="Exists('..\..\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets')" />
     <Import Project="..\..\packages\OpenCV.Win.Core.310.6.1\build\native\opencv.win.core.targets" Condition="Exists('..\..\packages\OpenCV.Win.Core.310.6.1\build\native\opencv.win.core.targets')" />
     <Import Project="..\..\packages\OpenCV.Win.FLANN.310.6.1\build\native\opencv.win.flann.targets" Condition="Exists('..\..\packages\OpenCV.Win.FLANN.310.6.1\build\native\opencv.win.flann.targets')" />
     <Import Project="..\..\packages\OpenCV.Win.ImgProc.310.6.1\build\native\opencv.win.imgproc.targets" Condition="Exists('..\..\packages\OpenCV.Win.ImgProc.310.6.1\build\native\opencv.win.imgproc.targets')" />
@@ -260,13 +258,12 @@
     <Import Project="..\..\packages\OpenCV.Win.HighGUI.310.6.1\build\native\opencv.win.highgui.targets" Condition="Exists('..\..\packages\OpenCV.Win.HighGUI.310.6.1\build\native\opencv.win.highgui.targets')" />
     <Import Project="..\..\packages\OpenCV.Win.Features2D.310.6.1\build\native\opencv.win.features2d.targets" Condition="Exists('..\..\packages\OpenCV.Win.Features2D.310.6.1\build\native\opencv.win.features2d.targets')" />
     <Import Project="..\..\packages\OpenCV.Win.Calib3D.310.6.1\build\native\opencv.win.calib3d.targets" Condition="Exists('..\..\packages\OpenCV.Win.Calib3D.310.6.1\build\native\opencv.win.calib3d.targets')" />
+    <Import Project="..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets" Condition="Exists('..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props'))" />
-    <Error Condition="!Exists('..\..\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets'))" />
     <Error Condition="!Exists('..\..\packages\OpenCV.Win.Core.310.6.1\build\native\opencv.win.core.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\OpenCV.Win.Core.310.6.1\build\native\opencv.win.core.targets'))" />
     <Error Condition="!Exists('..\..\packages\OpenCV.Win.FLANN.310.6.1\build\native\opencv.win.flann.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\OpenCV.Win.FLANN.310.6.1\build\native\opencv.win.flann.targets'))" />
     <Error Condition="!Exists('..\..\packages\OpenCV.Win.ImgProc.310.6.1\build\native\opencv.win.imgproc.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\OpenCV.Win.ImgProc.310.6.1\build\native\opencv.win.imgproc.targets'))" />
@@ -276,5 +273,6 @@
     <Error Condition="!Exists('..\..\packages\OpenCV.Win.HighGUI.310.6.1\build\native\opencv.win.highgui.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\OpenCV.Win.HighGUI.310.6.1\build\native\opencv.win.highgui.targets'))" />
     <Error Condition="!Exists('..\..\packages\OpenCV.Win.Features2D.310.6.1\build\native\opencv.win.features2d.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\OpenCV.Win.Features2D.310.6.1\build\native\opencv.win.features2d.targets'))" />
     <Error Condition="!Exists('..\..\packages\OpenCV.Win.Calib3D.310.6.1\build\native\opencv.win.calib3d.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\OpenCV.Win.Calib3D.310.6.1\build\native\opencv.win.calib3d.targets'))" />
+    <Error Condition="!Exists('..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets'))" />
   </Target>
 </Project>
