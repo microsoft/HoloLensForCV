@@ -28,64 +28,68 @@ namespace HoloLensForCV
 	void SensorFrameRecorderSink::Start(
 		_In_ Windows::Storage::StorageFolder^ archiveSourceFolder)
 	{
+		std::lock_guard<std::mutex> guard(_sinkMutex);
 
 		// Remember the root folder for the recorded sensor meta-data.
+		REQUIRES(nullptr == _archiveSourceFolder);
+		_archiveSourceFolder = archiveSourceFolder;
+
+		// Create the tarball for the bitmap files.
+		
+		{
+			wchar_t fileName[MAX_PATH] = {};
+			swprintf_s(
+				fileName,
+				L"%s\\%s.tar",
+				_archiveSourceFolder->Path->Data(),
+				_sensorName->Data());
+			_bitmapTarball.reset(new Io::Tarball(fileName));
+		}
+		
+
+		// Create the csv file for the frame information.
 
 		{
-			std::lock_guard<std::mutex> guard(_sinkMutex);
-			REQUIRES(nullptr == _archiveSourceFolder);
-			_archiveSourceFolder = archiveSourceFolder;
-		}
-
-		// Create a sub-folder for the recorder sensor stream data.
-
-		concurrency::create_task(archiveSourceFolder->CreateFolderAsync(
-			_sensorName, Windows::Storage::CreationCollisionOption::ReplaceExisting)
-		).then([&](Windows::Storage::StorageFolder^ dataArchiveSourceFolder) {
-			std::lock_guard<std::mutex> guard(_sinkMutex);
-			REQUIRES(nullptr == _dataArchiveSourceFolder);
-			_dataArchiveSourceFolder = dataArchiveSourceFolder;
-
 			wchar_t fileName[MAX_PATH] = {};
-
 			swprintf_s(
 				fileName,
 				L"%s\\%s.csv",
 				_archiveSourceFolder->Path->Data(),
 				_sensorName->Data());
-
 			_csvWriter.reset(new CsvWriter(fileName));
+		}
 
-			{
-				std::vector<std::wstring> columns;
+		// Write header information to csv file.
 
-				columns.push_back(L"Timestamp");
-				columns.push_back(L"ImageFileName");
+		{
+			std::vector<std::wstring> columns;
 
-				columns.push_back(L"FrameToOrigin.m11"); columns.push_back(L"FrameToOrigin.m12"); columns.push_back(L"FrameToOrigin.m13"); columns.push_back(L"FrameToOrigin.m14");
-				columns.push_back(L"FrameToOrigin.m21"); columns.push_back(L"FrameToOrigin.m22"); columns.push_back(L"FrameToOrigin.m23"); columns.push_back(L"FrameToOrigin.m24");
-				columns.push_back(L"FrameToOrigin.m31"); columns.push_back(L"FrameToOrigin.m32"); columns.push_back(L"FrameToOrigin.m33"); columns.push_back(L"FrameToOrigin.m34");
-				columns.push_back(L"FrameToOrigin.m41"); columns.push_back(L"FrameToOrigin.m42"); columns.push_back(L"FrameToOrigin.m43"); columns.push_back(L"FrameToOrigin.m44");
+			columns.push_back(L"Timestamp");
+			columns.push_back(L"ImageFileName");
 
-				columns.push_back(L"CameraViewTransform.m11"); columns.push_back(L"CameraViewTransform.m12"); columns.push_back(L"CameraViewTransform.m13"); columns.push_back(L"CameraViewTransform.m14");
-				columns.push_back(L"CameraViewTransform.m21"); columns.push_back(L"CameraViewTransform.m22"); columns.push_back(L"CameraViewTransform.m23"); columns.push_back(L"CameraViewTransform.m24");
-				columns.push_back(L"CameraViewTransform.m31"); columns.push_back(L"CameraViewTransform.m32"); columns.push_back(L"CameraViewTransform.m33"); columns.push_back(L"CameraViewTransform.m34");
-				columns.push_back(L"CameraViewTransform.m41"); columns.push_back(L"CameraViewTransform.m42"); columns.push_back(L"CameraViewTransform.m43"); columns.push_back(L"CameraViewTransform.m44");
+			columns.push_back(L"FrameToOrigin.m11"); columns.push_back(L"FrameToOrigin.m12"); columns.push_back(L"FrameToOrigin.m13"); columns.push_back(L"FrameToOrigin.m14");
+			columns.push_back(L"FrameToOrigin.m21"); columns.push_back(L"FrameToOrigin.m22"); columns.push_back(L"FrameToOrigin.m23"); columns.push_back(L"FrameToOrigin.m24");
+			columns.push_back(L"FrameToOrigin.m31"); columns.push_back(L"FrameToOrigin.m32"); columns.push_back(L"FrameToOrigin.m33"); columns.push_back(L"FrameToOrigin.m34");
+			columns.push_back(L"FrameToOrigin.m41"); columns.push_back(L"FrameToOrigin.m42"); columns.push_back(L"FrameToOrigin.m43"); columns.push_back(L"FrameToOrigin.m44");
 
-				columns.push_back(L"CameraProjectionTransform.m11"); columns.push_back(L"CameraProjectionTransform.m12"); columns.push_back(L"CameraProjectionTransform.m13"); columns.push_back(L"CameraProjectionTransform.m14");
-				columns.push_back(L"CameraProjectionTransform.m21"); columns.push_back(L"CameraProjectionTransform.m22"); columns.push_back(L"CameraProjectionTransform.m23"); columns.push_back(L"CameraProjectionTransform.m24");
-				columns.push_back(L"CameraProjectionTransform.m31"); columns.push_back(L"CameraProjectionTransform.m32"); columns.push_back(L"CameraProjectionTransform.m33"); columns.push_back(L"CameraProjectionTransform.m34");
-				columns.push_back(L"CameraProjectionTransform.m41"); columns.push_back(L"CameraProjectionTransform.m42"); columns.push_back(L"CameraProjectionTransform.m43"); columns.push_back(L"CameraProjectionTransform.m44");
+			columns.push_back(L"CameraViewTransform.m11"); columns.push_back(L"CameraViewTransform.m12"); columns.push_back(L"CameraViewTransform.m13"); columns.push_back(L"CameraViewTransform.m14");
+			columns.push_back(L"CameraViewTransform.m21"); columns.push_back(L"CameraViewTransform.m22"); columns.push_back(L"CameraViewTransform.m23"); columns.push_back(L"CameraViewTransform.m24");
+			columns.push_back(L"CameraViewTransform.m31"); columns.push_back(L"CameraViewTransform.m32"); columns.push_back(L"CameraViewTransform.m33"); columns.push_back(L"CameraViewTransform.m34");
+			columns.push_back(L"CameraViewTransform.m41"); columns.push_back(L"CameraViewTransform.m42"); columns.push_back(L"CameraViewTransform.m43"); columns.push_back(L"CameraViewTransform.m44");
 
-				_csvWriter->WriteHeader(columns);
-			}
+			columns.push_back(L"CameraProjectionTransform.m11"); columns.push_back(L"CameraProjectionTransform.m12"); columns.push_back(L"CameraProjectionTransform.m13"); columns.push_back(L"CameraProjectionTransform.m14");
+			columns.push_back(L"CameraProjectionTransform.m21"); columns.push_back(L"CameraProjectionTransform.m22"); columns.push_back(L"CameraProjectionTransform.m23"); columns.push_back(L"CameraProjectionTransform.m24");
+			columns.push_back(L"CameraProjectionTransform.m31"); columns.push_back(L"CameraProjectionTransform.m32"); columns.push_back(L"CameraProjectionTransform.m33"); columns.push_back(L"CameraProjectionTransform.m34");
+			columns.push_back(L"CameraProjectionTransform.m41"); columns.push_back(L"CameraProjectionTransform.m42"); columns.push_back(L"CameraProjectionTransform.m43"); columns.push_back(L"CameraProjectionTransform.m44");
 
-		});
+			_csvWriter->WriteHeader(columns);
+		}
 	}
 
 	void SensorFrameRecorderSink::Stop()
 	{
 		std::lock_guard<std::mutex> guard(_sinkMutex);
+		_bitmapTarball.reset();
 		_csvWriter.reset();
 		_archiveSourceFolder = nullptr;
 	}
@@ -122,58 +126,46 @@ namespace HoloLensForCV
 
 		std::lock_guard<std::mutex> lockGuard(_sinkMutex);
 
-		if (nullptr == _archiveSourceFolder || nullptr == _dataArchiveSourceFolder)
+		if (nullptr == _archiveSourceFolder)
 		{
 			return;
 		}
 
-		//
 		// Store a reference to the camera intrinsics.
-		//
 		if (nullptr == _cameraIntrinsics)
 		{
-			_cameraIntrinsics =
-				sensorFrame->SensorStreamingCameraIntrinsics;
+			_cameraIntrinsics = sensorFrame->SensorStreamingCameraIntrinsics;
 		}
 
-		//
-		// Save the uncompressed image to disk. This is faster
-		// than trying to compress images on the fly.
-		//
-		char absolutePath[MAX_PATH] = {};
-
-		sprintf_s(
-			absolutePath,
-			"%S\\%020llu_%S.pgm",
-			_dataArchiveSourceFolder->Path->Data(),
-			sensorFrame->Timestamp.UniversalTime,
-			_sensorName->Data());
+		wchar_t bitmapPath[MAX_PATH] = {};
+		swprintf_s(
+			bitmapPath, L"%s\\%020llu.pgm",
+			_sensorName->Data(), sensorFrame->Timestamp.UniversalTime);
 
 #if DBG_ENABLE_VERBOSE_LOGGING
 		dbg::trace(
-			L"SensorFrameRecorderSink::Send: saving sensor frame to %S",
-			absolutePath);
+			L"SensorFrameRecorderSink::Send: saving sensor frame to %s",
+			bitmapPath);
 #endif /* DBG_ENABLE_VERBOSE_LOGGING */
 
 		Windows::Graphics::Imaging::SoftwareBitmap^ softwareBitmap =
 			sensorFrame->SoftwareBitmap;
 
 		{
-			FILE* file = nullptr;
+			// Determine metadata information about frame.
 
-			ASSERT(0 == fopen_s(&file, absolutePath, "wb"));
+			int maxBitmapValue = 0;
+			int actualBitmapWidth = softwareBitmap->PixelWidth;
 
-			int maxValue = 0;
-			int actualPixelWidth = softwareBitmap->PixelWidth;
 			switch (softwareBitmap->BitmapPixelFormat)
 			{
 
 			case Windows::Graphics::Imaging::BitmapPixelFormat::Gray16:
-				maxValue = 65535;
+				maxBitmapValue = 65535;
 				break;
 
 			case Windows::Graphics::Imaging::BitmapPixelFormat::Gray8:
-				maxValue = 255;
+				maxBitmapValue = 255;
 				break;
 
 			case Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8:
@@ -182,8 +174,8 @@ namespace HoloLensForCV
 					(_sensorType == SensorType::VisibleLightRightFront) ||
 					(_sensorType == SensorType::VisibleLightRightRight))
 				{
-					maxValue = 255;
-					actualPixelWidth = actualPixelWidth * 4;
+					maxBitmapValue = 255;
+					actualBitmapWidth = actualBitmapWidth * 4;
 				}
 				else
 				{
@@ -203,63 +195,62 @@ namespace HoloLensForCV
 				break;
 			}
 
-			// Write Header
+			// Compose PGM header string.
 			std::stringstream header;
 			header << "P5\n"
-				<< actualPixelWidth << " "
+				<< actualBitmapWidth << " "
 				<< softwareBitmap->PixelHeight << "\n"
-				<< maxValue << "\n";
+				<< maxBitmapValue << "\n";
+			const std::string headerString = header.str();
 
-			std::string headerString = header.str();
-			ASSERT(headerString.size() == fwrite(
-				headerString.c_str(),
-				sizeof(uint8_t) /* _ElementSize */,
-				headerString.size() /* _ElementCount */,
-				file));
-
+			// Get bitmap buffer object of the frame.
 			Windows::Graphics::Imaging::BitmapBuffer^ bitmapBuffer =
 				softwareBitmap->LockBuffer(
 					Windows::Graphics::Imaging::BitmapBufferAccessMode::Read);
 
+			// Get raw pointer to the buffer object.
 			uint32_t pixelBufferDataLength = 0;
-
-			uint8_t* pixelBufferData =
+			const uint8_t* pixelBufferData =
 				Io::GetTypedPointerToMemoryBuffer<uint8_t>(
 					bitmapBuffer->CreateReference(),
 					pixelBufferDataLength);
 
-			ASSERT(pixelBufferDataLength == fwrite(
-				pixelBufferData,
-				sizeof(uint8_t) /* _ElementSize */,
-				pixelBufferDataLength /* _ElementCount */,
-				file));
+			// Allocate data for PGM bitmap file.
+			std::vector<uint8_t> bitmapData;
+			bitmapData.reserve(headerString.size() + pixelBufferDataLength);
 
-			ASSERT(0 == fclose(
-				file));
+			// Add PGM header data.
+			bitmapData.insert(
+				bitmapData.end(),
+				headerString.c_str(), headerString.c_str() + headerString.size());
+
+			// Add raw pixel data.
+			bitmapData.insert(
+				bitmapData.end(),
+				pixelBufferData, pixelBufferData + pixelBufferDataLength);
+
+			// Add the bitmap to the tarball.
+			_bitmapTarball->AddFile(bitmapPath, bitmapData.data(), bitmapData.size());
 		}
 
 		bool writeComma = false;
 
-		_csvWriter->WriteUInt64(sensorFrame->Timestamp.UniversalTime, &writeComma);
+		_csvWriter->WriteUInt64(
+			sensorFrame->Timestamp.UniversalTime, &writeComma);
 
 		{
-			wchar_t relativePath[MAX_PATH] = {};
-
-			swprintf_s(
-				relativePath,
-				L"%020llu_%s.raw",
-				sensorFrame->Timestamp.UniversalTime,
-				_sensorName->Data());
-
-			_csvWriter->WriteText(relativePath, &writeComma);
+			_csvWriter->WriteText(
+				bitmapPath, &writeComma);
 		}
 
-		_csvWriter->WriteFloat4x4(sensorFrame->FrameToOrigin, &writeComma);
-
-		_csvWriter->WriteFloat4x4(sensorFrame->CameraViewTransform, &writeComma);
+		_csvWriter->WriteFloat4x4(
+			sensorFrame->FrameToOrigin, &writeComma);
 
 		_csvWriter->WriteFloat4x4(
-      sensorFrame->CameraProjectionTransform, &writeComma);
+			sensorFrame->CameraViewTransform, &writeComma);
+
+		_csvWriter->WriteFloat4x4(
+			sensorFrame->CameraProjectionTransform, &writeComma);
 
 		_csvWriter->EndLine();
 	}

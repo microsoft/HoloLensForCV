@@ -316,4 +316,74 @@ namespace Io
         ASSERT(!!CloseHandle(
             output));
     }
+
+	Tarball::Tarball(_In_ const std::wstring& tarballFileName) {
+		_tarballFile.open(tarballFileName, std::ios::binary);
+		ASSERT(_tarballFile.is_open());
+	}
+
+	Tarball::~Tarball() {
+		Close();
+	}
+
+	void Tarball::Close() {
+		if (_tarballFile.is_open()) {
+			// The tarball always ends with two 512 byte blocks of zeros.
+			std::vector<char> alignmentData(512, 0);
+			_tarballFile.write(alignmentData.data(), alignmentData.size());
+			_tarballFile.write(alignmentData.data(), alignmentData.size());
+			_tarballFile.close();
+		}
+	}
+
+	void Tarball::AddFile(
+		_In_ const std::wstring& fileName,
+		_In_ const uint8_t* fileData,
+		_In_ const size_t fileSize) {
+
+		ASSERT(_tarballFile.is_open());
+
+		static_assert(
+			sizeof(TarHeader) == 512,
+			"Size of the TarHeader structure must be equal to 512 bytes.");
+
+		// Construct the file header.
+
+		TarHeader header;
+
+		CopyStringToTarHeader<100>(Utf16ToUtf8(fileName), header.FileName);
+		CopyUInt64ToTarHeaderAsOctets<12>(fileSize, header.FileSize);
+		CopyUInt64ToTarHeaderAsOctets<12>(
+			std::chrono::duration_cast<std::chrono::seconds>(
+				std::chrono::system_clock::now().time_since_epoch()).count(),
+			header.LastModificationTime);
+
+		uint64_t headerChecksum = 0;
+		for (size_t i = 0; i < sizeof(header); ++i)
+		{
+			headerChecksum += reinterpret_cast<uint8_t*>(&header)[i];
+		}
+
+		CopyUInt64ToTarHeaderAsOctets<7>(headerChecksum, header.Checksum);
+
+		// Write the header and the data to the tarball.
+
+		_tarballFile.write(
+			reinterpret_cast<const char*>(&header), sizeof(header));
+		_tarballFile.write(
+			reinterpret_cast<const char*>(fileData), fileSize);
+		
+		// Make sure the file is aligned to 512 byes, otherwise
+		// pad the file with zeros.
+
+		const size_t lastBlockSize = fileSize % 512;
+		if (lastBlockSize != 0)
+		{
+			const size_t lastBlockPadding = 512 - lastBlockSize;
+			ASSERT(lastBlockPadding < 512);
+
+			_tarballFile.write(
+				std::vector<char>(lastBlockPadding, 0).data(), lastBlockPadding);
+		}
+	}
 }

@@ -11,6 +11,8 @@
 
 #pragma once
 
+#include "pch.h"
+
 namespace HoloLensForCV
 {
 	//
@@ -26,13 +28,11 @@ namespace HoloLensForCV
 			_In_ SensorType sensorType,
 			_In_ Platform::String^ sensorName);
 
-		void Start(
-			_In_ Windows::Storage::StorageFolder^ archiveSourceFolder);
+		void Start(_In_ Windows::Storage::StorageFolder^ archiveSourceFolder);
 
 		void Stop();
 
-		virtual void Send(
-			SensorFrame^ sensorFrame);
+		virtual void Send(_In_ SensorFrame^ sensorFrame);
 
 	internal:
 		Platform::String^ GetSensorName();
@@ -45,7 +45,6 @@ namespace HoloLensForCV
 	private:
 		~SensorFrameRecorderSink();
 
-	private:
 		Platform::String^ _sensorName;
 
 		SensorType _sensorType;
@@ -53,8 +52,8 @@ namespace HoloLensForCV
 		std::mutex _sinkMutex;
 
 		Windows::Storage::StorageFolder^ _archiveSourceFolder;
-		Windows::Storage::StorageFolder^ _dataArchiveSourceFolder;
 
+		std::unique_ptr<Io::Tarball> _bitmapTarball;
 		std::unique_ptr<CsvWriter> _csvWriter;
 
 		CameraIntrinsics^ _cameraIntrinsics;

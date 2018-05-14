@@ -564,9 +564,7 @@ namespace Recorder
             concurrency::create_task(
                 _mediaFrameSourceGroup->StartAsync());
 
-        captureSartAsyncTask.then(
-            [&]()
-        {
+        captureSartAsyncTask.then([&]() {
             _mediaFrameSourceGroupStarted = true;
         });
     }

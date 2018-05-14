@@ -210,7 +210,7 @@ namespace HoloLensForCV
     void SensorFrameRecorder::ReportCameraCalibrationInformation(
         _Inout_ std::vector<std::wstring>& sourceFiles)
     {
-        //TODO: Support PV calibration
+        // TODO: Support PV calibration.
 
         for (SensorFrameRecorderSink^ sensorFrameSink : _sensorFrameSinks)
         {
