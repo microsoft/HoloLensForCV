@@ -76,24 +76,6 @@ namespace HoloLensForCV
         return _enabledFrameReaders[sensorTypeAsIndex];
     }
 
-    bool MediaFrameSourceGroup::IsStarted(
-        _In_ SensorType sensorType)
-    {
-        if (!IsEnabled(sensorType))
-        {
-            return false;
-        }
-
-        const int32_t sensorTypeAsIndex =
-            (int32_t)sensorType;
-
-        REQUIRES(
-            0 <= sensorTypeAsIndex &&
-            sensorTypeAsIndex < (int32_t)_frameReaders.size());
-
-        return nullptr != _frameReaders[sensorTypeAsIndex];
-    }
-
     Windows::Foundation::IAsyncAction^ MediaFrameSourceGroup::StartAsync()
     {
         return concurrency::create_async(
