@@ -122,6 +122,11 @@ namespace HoloLensForCV
             0 <= sensorTypeAsIndex &&
             sensorTypeAsIndex < (int32_t)_frameReaders.size());
 
+        if (_frameReaders[sensorTypeAsIndex] == nullptr)
+        {
+            return nullptr;
+        }
+
         return _frameReaders[sensorTypeAsIndex]->GetLatestSensorFrame();
     }
 
