@@ -137,6 +137,17 @@ namespace HoloLensForCV
 			_cameraIntrinsics = sensorFrame->SensorStreamingCameraIntrinsics;
 		}
 
+		// Avoid duplicate sensor frame recordings.
+		if (_prevFrameTimestamp.Equals(sensorFrame->Timestamp)) {
+			return;
+		}
+
+		_prevFrameTimestamp = sensorFrame->Timestamp;
+
+		//
+		// Write the sensor frame as a bitmap to the archive.
+		//
+
 		wchar_t bitmapPath[MAX_PATH] = {};
 		swprintf_s(
 			bitmapPath, L"%s\\%020llu.pgm",
@@ -232,6 +243,10 @@ namespace HoloLensForCV
 			// Add the bitmap to the tarball.
 			_bitmapTarball->AddFile(bitmapPath, bitmapData.data(), bitmapData.size());
 		}
+
+		//
+		// Record the sensor frame meta data to the csv file.
+		//
 
 		bool writeComma = false;
 

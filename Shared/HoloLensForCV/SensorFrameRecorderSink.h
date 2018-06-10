@@ -57,5 +57,7 @@ namespace HoloLensForCV
 		std::unique_ptr<CsvWriter> _csvWriter;
 
 		CameraIntrinsics^ _cameraIntrinsics;
+
+		Windows::Foundation::DateTime _prevFrameTimestamp;
 	};
 }
