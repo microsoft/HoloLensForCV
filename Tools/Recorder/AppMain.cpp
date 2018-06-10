@@ -55,7 +55,7 @@ namespace Recorder
 #ifdef RECORDER_USE_SPEECH
         StartRecognizeSpeechCommands();
         Platform::StringReference startSentence =
-            L"Say 'start' to begin, and 'stop' to end recording.";
+            L"Say 'start' to begin, and 'stop' to end recording";
 #else
         Platform::StringReference startSentence =
             L"Air tap to begin and end recording";
@@ -261,10 +261,12 @@ namespace Recorder
             return;
         }
 
-        SaySentence(Platform::StringReference(L"Ending recording"));
+        SaySentence(Platform::StringReference(L"Ending recording, wait a moment to finish"));
 
         _sensorFrameRecorder->Stop();
         _sensorFrameRecorderStarted = false;
+
+        SaySentence(Platform::StringReference(L"Finished recording"));
     }
 
     concurrency::task<void> AppMain::StopCurrentRecognizerIfExists()
