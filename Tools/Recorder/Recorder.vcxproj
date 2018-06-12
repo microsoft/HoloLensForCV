@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props" Condition="Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props')" />
+  <Import Project="$(SolutionDir)\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.props" Condition="Exists('$(SolutionDir)\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.props')" />
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A08C66C8-88B3-45F4-8643-27939BC248ED}</ProjectGuid>
     <Keyword>Recorder</Keyword>
@@ -9,8 +9,8 @@
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
     <ApplicationType>Windows Store</ApplicationType>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
-    <WindowsTargetPlatformMinVersion>10.0.14393.0</WindowsTargetPlatformMinVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.17134.0</WindowsTargetPlatformMinVersion>
     <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
     <EnableDotNetNativeCompatibleProfile>true</EnableDotNetNativeCompatibleProfile>
   </PropertyGroup>
@@ -122,9 +122,9 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <None Include="packages.config" />
     <None Include="README.md" />
     <None Include="Recorder_TemporaryKey.pfx" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(SolutionDir)\Shared\Debugging\Debugging.vcxproj">
@@ -154,7 +154,7 @@
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ImageContentTask.targets" />
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\MeshContentTask.targets" />
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ShaderGraphContentTask.targets" />
-    <Import Project="$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets" Condition="Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets')" />
+    <Import Project="..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets" Condition="Exists('..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets')" />
   </ImportGroup>
   <PropertyGroup>
     <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
@@ -163,7 +163,6 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.props'))" />
-    <Error Condition="!Exists('$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\directxtk_uwp.2017.6.21.1\build\native\directxtk_uwp.targets'))" />
+    <Error Condition="!Exists('..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets'))" />
   </Target>
 </Project>
