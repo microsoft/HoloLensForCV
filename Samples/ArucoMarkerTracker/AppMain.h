@@ -52,9 +52,6 @@ namespace ArucoMarkerTracker
         HoloLensForCV::MediaFrameSourceGroup^ _holoLensMediaFrameSourceGroup;
         bool _holoLensMediaFrameSourceGroupStarted;
 
-        // HoloLens media frame server manager
-        HoloLensForCV::SensorFrameStreamer^ _sensorFrameStreamer;
-
         Windows::Foundation::DateTime _latestSelectedCameraTimestamp;
 
         cv::Mat _undistortMap1;
