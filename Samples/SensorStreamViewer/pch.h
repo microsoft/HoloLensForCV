@@ -8,11 +8,13 @@
 
 #include <sstream>
 
+#include <ppl.h>
 #include <collection.h>
 #include <ppltasks.h>
 #include <shared_mutex>
 #include <mfidl.h>
 #include <rpcndr.h>
+#include <concrt.h>
 
 #include "MFPropertyGuids.h"
 #include "App.xaml.h"

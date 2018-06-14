@@ -32,10 +32,13 @@ using namespace Windows::UI::Xaml::Media::Imaging;
 
 
 
-SensorStreamViewer::SensorStreamViewer()
+SensorStreamViewer::SensorStreamViewer() :
+    m_selectedStreamId(1),
+    m_isPlaying(false)
 {
     InitializeComponent();
     m_logger = ref new SimpleLogger(outputTextBlock);
+    this->PlayStopButton->IsEnabled = false;
     
 }
 
@@ -112,8 +115,9 @@ task<void> SensorStreamViewer::PickNextMediaSourceWorkerAsync()
             return task_from_result();
         }
 
-        // Pick next group in the array after each time the Next button is clicked.
-        m_selectedSourceGroupIndex = (m_selectedSourceGroupIndex + 1) % allGroups->Size;
+        // Pick the first group.
+        // TODO: Select by name
+        m_selectedSourceGroupIndex = 0;
         MediaFrameSourceGroup^ selectedGroup = allGroups->GetAt(m_selectedSourceGroupIndex);
 
         m_logger->Log("Found " + allGroups->Size.ToString() + " groups and " +
@@ -142,18 +146,18 @@ task<void> SensorStreamViewer::PickNextMediaSourceWorkerAsync()
                 int id = MFSourceIdToStreamId(sourceIdStr);
 
                 Platform::String^ sensorName(kind.ToString());
-#if _DEBUG 
-                if (IsDebuggerPresent())
-                {
+
+#if DEBUG_PRINT_PROPERTIES 
                     DebugOutputAllProperties(source->Info->Properties);
-                }
 #endif
 
                 GetSensorName(source, sensorName);
 
                 // Create the Sensor views
-                SensorImageControl^ imageControl = ref new SensorImageControl(sensorName);
+                SensorImageControl^ imageControl = ref new SensorImageControl(id, sensorName);
+                imageControl->Background = ref new Windows::UI::Xaml::Media::SolidColorBrush(Windows::UI::Colors::Green);
                 m_frameRenderers[id] = imageControl->GetRenderer();
+                imageControl->PointerPressed += ref new Windows::UI::Xaml::Input::PointerEventHandler(this, &SensorStreaming::SensorStreamViewer::OnPointerPressed);
                 
                 Windows::UI::Core::CoreDispatcher^ uiThreadDispatcher =
                     Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher;
@@ -169,7 +173,7 @@ task<void> SensorStreamViewer::PickNextMediaSourceWorkerAsync()
                     imageControl->SetValue(Windows::UI::Xaml::Controls::Grid::ColumnProperty, id - ((id / 4) * 4));
                 }));
 
-                if (id != 4)
+                if (id != m_selectedStreamId)
                 {
                     continue;
                 }
@@ -307,13 +311,16 @@ task<void> SensorStreamViewer::CleanupMediaCaptureAsync()
             reader->FrameArrived -= token;
             cleanupTask = cleanupTask && create_task(reader->StopAsync());
         }
-        m_readers.clear();
-        m_mediaCapture = nullptr;
+        cleanupTask = cleanupTask.then([this] {
+            m_readers.clear();
+            m_frameRenderers.clear();
+            m_FrameReadersToSourceIdMap.clear();
+            m_frameCount.clear();
+            m_mediaCapture = nullptr;
+        });
     }
     return cleanupTask;
 }
-
-#define PROPERTY_GUID_TO_STRING
 
 static Platform::String^ PropertyGuidToString(Platform::Guid& guid)
 {
@@ -357,18 +364,19 @@ static Platform::String^ PropertyGuidToString(Platform::Guid& guid)
 
 void SensorStreamViewer::DebugOutputAllProperties(Windows::Foundation::Collections::IMapView<Platform::Guid, Platform::Object^>^ properties)
 {
-    auto itr = properties->First();
-    OutputDebugStringW(L"*********************\n");
-    while (itr->HasCurrent)
+    if (IsDebuggerPresent())
     {
-    auto current = itr->Current;
+        auto itr = properties->First();
+        while (itr->HasCurrent)
+        {
+            auto current = itr->Current;
 
-    auto keyString = PropertyGuidToString(current->Key);
-    OutputDebugStringW(reinterpret_cast<const wchar_t*>(keyString->Data()));
-    OutputDebugStringW(L"\n");
-    itr->MoveNext();
+            auto keyString = PropertyGuidToString(current->Key);
+            OutputDebugStringW(reinterpret_cast<const wchar_t*>(keyString->Data()));
+            OutputDebugStringW(L"\n");
+            itr->MoveNext();
+        }
     }
-    OutputDebugStringW(L"*********************\n");
 }
 
 void SensorStreamViewer::FrameReader_FrameArrived(MediaFrameReader^ sender, MediaFrameArrivedEventArgs^ args)
@@ -381,20 +389,14 @@ void SensorStreamViewer::FrameReader_FrameArrived(MediaFrameReader^ sender, Medi
     {
         if (frame != nullptr)
         {
-#if _DEBUG 
-            if (IsDebuggerPresent())
-            {
-                DebugOutputAllProperties(frame->Properties);
-            }
+#if DEBUG_PRINT_PROPERTIES 
+            DebugOutputAllProperties(source->Info->Properties);
 #endif
             // Find the corresponding source id
             VERIFY(m_FrameReadersToSourceIdMap.count(sender->GetHashCode()) != 0);
             int sourceId = m_FrameReadersToSourceIdMap[sender->GetHashCode()];
 
-            if (sourceId == 4)
-            {
-                m_frameRenderers[sourceId]->ProcessFrame(frame);
-            }
+            m_frameRenderers[sourceId]->ProcessFrame(frame);
             m_frameCount[frame->SourceKind]++;
         }
     }
@@ -424,13 +426,22 @@ bool SensorStreamViewer::GetSensorName(Windows::Media::Capture::Frames::MediaFra
 }
 
 
-void SensorStreaming::SensorStreamViewer::StopButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+void SensorStreaming::SensorStreamViewer::PlayStopButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
     this->Stop();
 }
 
 
-void SensorStreaming::SensorStreamViewer::StartButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+void SensorStreaming::SensorStreamViewer::OnPointerPressed(Platform::Object^ sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs^ e)
 {
-
+    auto imageControl = dynamic_cast<SensorImageControl^>(sender);
+    if (imageControl != nullptr)
+    {
+        concurrency::critical_section::scoped_lock lock(m_stateLock);
+        if (imageControl->GetId() != m_selectedStreamId)
+        {
+            m_selectedStreamId = imageControl->GetId();
+            PickNextMediaSourceAsync();
+        }
+    }
 }

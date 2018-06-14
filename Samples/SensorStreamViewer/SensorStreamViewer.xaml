@@ -18,11 +18,10 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="12,20,12,12">
-       
+    <ScrollViewer Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="5">
         <StackPanel>
-            <StackPanel Orientation="Horizontal">
-            <Button x:Name="StopButton" Margin="10, 10, 10, 10" Click="StopButton_Click">Stop</Button>
+            <StackPanel Orientation="Horizontal" Visibility="Collapsed">
+                <Button x:Name="PlayStopButton" Margin="10, 10, 10, 10" Click="PlayStopButton_Click">Start</Button>
             </StackPanel>
             <Grid x:Name="StreamGrid" HorizontalAlignment="Stretch" Margin="0,10,0,0">
                 <Grid.ColumnDefinitions>

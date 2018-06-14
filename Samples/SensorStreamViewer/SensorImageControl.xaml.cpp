@@ -21,16 +21,20 @@ using namespace Windows::UI::Xaml::Navigation;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
-SensorImageControl::SensorImageControl(Platform::String ^ sensorName)
+SensorImageControl::SensorImageControl(int id, Platform::String ^ sensorName)
+    :m_id(id)
 {
 	InitializeComponent();
     m_renderer = ref new FrameRenderer(SensorImage);
     SensorName->Text = sensorName;
 }
 
-
-
 FrameRenderer^ SensorImageControl::GetRenderer()
 {
     return m_renderer;
+}
+
+int SensorStreaming::SensorImageControl::GetId()
+{
+    return m_id;
 }

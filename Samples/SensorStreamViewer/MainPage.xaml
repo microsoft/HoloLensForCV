@@ -40,7 +40,7 @@
             </RelativePanel>
         
         <StackPanel x:Name="HeaderPanel" Orientation="Horizontal">
-            <TextBlock x:Name="Header" Text="Sensor Stream Viewer" Style="{StaticResource SampleHeaderTextStyle}" Margin="0,15,0,0" />
+            <TextBlock x:Name="Header" Text="Sensor Stream Viewer" Style="{StaticResource SampleHeaderTextStyle}" Margin="0,0,0,0" />
         </StackPanel>
     </Grid>
 </Page>

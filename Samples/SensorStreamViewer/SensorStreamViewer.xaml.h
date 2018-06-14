@@ -88,6 +88,7 @@ namespace SensorStreaming
 
         static void DebugOutputAllProperties(Windows::Foundation::Collections::IMapView<Platform::Guid, Platform::Object^>^ properties);
 
+        void OnPointerPressed(Platform::Object ^sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs ^e);
     private:
         // Private data.
         MainPage^ rootPage = MainPage::Current;
@@ -106,7 +107,10 @@ namespace SensorStreaming
         std::map<Windows::Media::Capture::Frames::MediaFrameSourceKind, int> m_frameCount;
         
         SimpleLogger^ m_logger;
-        void StopButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-        void StartButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        void PlayStopButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
+        bool m_isPlaying;
+        int m_selectedStreamId;
+
+        concurrency::critical_section m_stateLock;
     };
 }

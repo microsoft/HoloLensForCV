@@ -14,13 +14,14 @@ namespace SensorStreaming
 	public ref class SensorImageControl sealed
 	{
 	public:
-		SensorImageControl(Platform::String^ sensorName);
+		SensorImageControl(int Id, Platform::String^ sensorName);
 
         FrameRenderer^ GetRenderer();
 
+        int GetId();
     private:
         Windows::Media::Capture::Frames::MediaFrameSourceKind m_kind;
         FrameRenderer^ m_renderer;
-
-	};
+        int m_id;
+    };
 }
