@@ -126,26 +126,22 @@ static ColorBGRA InfraredColor(float value)
 static void PseudoColorForDepth(int pixelWidth, byte* inputRowBytes, byte* outputRowBytes, float depthScale, float minReliableDepth, float maxReliableDepth)
 {
     // Visualize space in front of your desktop, in meters.
-    float minInMeters = minReliableDepth * depthScale;
-    float maxInMeters = maxReliableDepth * depthScale;
-    float one_min = 1.0f / minInMeters;
-    float range = 1.0f / maxInMeters - one_min;
+    const float rangeReciprocal = 1.0f / (maxReliableDepth - minReliableDepth);
 
     UINT16* inputRow = reinterpret_cast<UINT16*>(inputRowBytes);
     ColorBGRA* outputRow = reinterpret_cast<ColorBGRA*>(outputRowBytes);
     for (int x = 0; x < pixelWidth; x++)
     {
-        float depth = static_cast<float>(inputRow[x]) * depthScale;
-
         // Map invalid depth values to transparent pixels.
         // This happens when depth information cannot be calculated, e.g. when objects are too close.
-        if (depth == 0)
+        if (inputRow[x] == 0 || inputRow[x] > 4000)
         {
             outputRow[x] = { 0 };
         }
         else
         {
-            float alpha = (depth - minReliableDepth) / (maxReliableDepth - minReliableDepth);
+            const float depth = static_cast<float>(inputRow[x]) * depthScale;
+            const float alpha = (depth - minReliableDepth) * rangeReciprocal;
             outputRow[x] = PseudoColor(alpha);
         }
     }
@@ -156,9 +152,10 @@ static void PseudoColorFor16BitInfrared(int pixelWidth, byte* inputRowBytes, byt
 {
     UINT16* inputRow = reinterpret_cast<UINT16*>(inputRowBytes);
     ColorBGRA* outputRow = reinterpret_cast<ColorBGRA*>(outputRowBytes);
+    const float rangeReciprocal = 1.0f / static_cast<float>(UINT16_MAX);
     for (int x = 0; x < pixelWidth; x++)
     {
-        outputRow[x] = InfraredColor(inputRow[x] / static_cast<float>(UINT16_MAX));
+        outputRow[x] = InfraredColor(inputRow[x] * rangeReciprocal);
     }
 }
 
@@ -166,9 +163,10 @@ static void PseudoColorFor16BitInfrared(int pixelWidth, byte* inputRowBytes, byt
 static void PseudoColorFor8BitInfrared(int pixelWidth, byte* inputRowBytes, byte* outputRowBytes)
 {
     ColorBGRA* outputRow = reinterpret_cast<ColorBGRA*>(outputRowBytes);
+    const float rangeReciprocal = 1.0f / static_cast<float>(UINT8_MAX);
     for (int x = 0; x < pixelWidth; x++)
     {
-        outputRow[x] = InfraredColor(inputRowBytes[x] / static_cast<float>(UINT8_MAX));
+        outputRow[x] = InfraredColor(inputRowBytes[x] * rangeReciprocal);
     }
 }
 
