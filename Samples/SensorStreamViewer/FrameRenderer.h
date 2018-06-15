@@ -24,6 +24,8 @@ namespace SensorStreaming
         FrameRenderer(Windows::UI::Xaml::Controls::Image^ image);
 
     public: // Public methods.
+        void SetSensorName(Platform::String^ sensorName);
+
         /// <summary>
         /// Buffer and render frames.
         /// </summary>
@@ -40,13 +42,6 @@ namespace SensorStreaming
 
     private: // Private static methods.
         /// <summary>
-        /// Converts the input frame to BGRA8 premultiplied alpha format and returns the result.
-        /// Returns nullptr if the input frame cannot be converted BGRA8 premultiplied alpha.
-        /// </summary>
-        static Windows::Graphics::Imaging::SoftwareBitmap^ ConvertToDisplayableImage(
-            Windows::Media::Capture::Frames::VideoMediaFrame^ inputFrame);
-
-        /// <summary>
         /// Transforms pixels of inputBitmap to an output bitmap using the supplied pixel transformation method.
         /// Returns nullptr if translation fails.
         /// </summary>
@@ -59,8 +54,16 @@ namespace SensorStreaming
 
         static Windows::Graphics::Imaging::SoftwareBitmap^ DeepCopyBitmap(
             Windows::Graphics::Imaging::SoftwareBitmap^ inputBitmap);
-#if 0
+
     private: // Private instance methods.
+        /// <summary>
+        /// Converts the input frame to BGRA8 premultiplied alpha format and returns the result.
+        /// Returns nullptr if the input frame cannot be converted BGRA8 premultiplied alpha.
+        /// </summary>
+        Windows::Graphics::Imaging::SoftwareBitmap^ ConvertToDisplayableImage(
+            Windows::Media::Capture::Frames::VideoMediaFrame^ inputFrame);
+
+#if 0
         /// <summary>
         /// Keep presenting the m_backBuffer until there are no more.
         /// </summary>
@@ -69,6 +72,7 @@ namespace SensorStreaming
 
     private: // Private data.
         Windows::UI::Xaml::Controls::Image^ m_imageElement;
+        Platform::String^ m_sensorName;
 
 #if 0
         Windows::Graphics::Imaging::SoftwareBitmap^ m_backBuffer;

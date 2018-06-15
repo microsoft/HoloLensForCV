@@ -157,11 +157,11 @@ task<void> SensorStreamViewer::LoadMediaSourceWorkerAsync()
                 SensorImageControl^ imageControl = ref new SensorImageControl(id, sensorName);
                 imageControl->Background = ref new Windows::UI::Xaml::Media::SolidColorBrush(Windows::UI::Colors::Green);
                 m_frameRenderers[id] = imageControl->GetRenderer();
+                m_frameRenderers[id]->SetSensorName(sensorName);
                 imageControl->PointerPressed += ref new Windows::UI::Xaml::Input::PointerEventHandler(this, &SensorStreaming::SensorStreamViewer::OnPointerPressed);
-                
+
                 Windows::UI::Core::CoreDispatcher^ uiThreadDispatcher =
                     Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher;
-
 
                 uiThreadDispatcher->RunAsync(
                     Windows::UI::Core::CoreDispatcherPriority::Normal,

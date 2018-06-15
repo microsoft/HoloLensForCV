@@ -178,6 +178,11 @@ FrameRenderer::FrameRenderer(Image^ imageElement)
     m_imageElement->Source = ref new SoftwareBitmapSource();
 }
 
+void FrameRenderer::SetSensorName(Platform::String^ sensorName)
+{
+    m_sensorName = sensorName;
+}
+
 #if 0
 Concurrency::task<void> FrameRenderer::DrainBackBufferAsync()
 {
@@ -344,10 +349,21 @@ SoftwareBitmap^ FrameRenderer::ConvertToDisplayableImage(VideoMediaFrame^ inputF
             // Since we must scale the output appropriately we use std::bind to
             // create a function that takes the depth scale as input but also matches
             // the required signature.
-            double depthScale = inputFrame->DepthMediaFrame->DepthFormat->DepthScaleInMeters;
-            float minReliableDepth = 0.2f; // static_cast<float>(inputFrame->DepthMediaFrame->MinReliableDepth);
-            float maxReliableDepth = 1.0f; // static_cast<float>(inputFrame->DepthMediaFrame->MaxReliableDepth);
-            return TransformBitmap(inputBitmap, std::bind(&PseudoColorForDepth, _1, _2, _3, static_cast<float>(depthScale), minReliableDepth, maxReliableDepth));
+            const float depthScale = 1.0f / 1000.0f;
+            float minReliableDepth, maxReliableDepth;
+
+            if (m_sensorName == L"Long Throw ToF Depth")
+            {
+                minReliableDepth = 0.5f;
+                maxReliableDepth = 4.0f;
+            }
+            else
+            {
+                minReliableDepth = 0.2f;
+                maxReliableDepth = 1.0f;
+            }
+
+            return TransformBitmap(inputBitmap, std::bind(&PseudoColorForDepth, _1, _2, _3, depthScale, minReliableDepth, maxReliableDepth));
         }
         else
         {
