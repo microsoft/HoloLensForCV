@@ -167,7 +167,9 @@ task<void> SensorStreamViewer::LoadMediaSourceWorkerAsync()
                     StreamGrid->Children->Append(imageControl);
                     imageControl->SetValue(Windows::UI::Xaml::Controls::Grid::RowProperty, id / 4);
                     imageControl->SetValue(Windows::UI::Xaml::Controls::Grid::ColumnProperty, id - ((id / 4) * 4));
+#if 0
                     imageControl->PointerPressed += ref new Windows::UI::Xaml::Input::PointerEventHandler(this, &SensorStreaming::SensorStreamViewer::OnPointerPressed);
+#endif
                     imageControl->Background = ref new Windows::UI::Xaml::Media::SolidColorBrush(Windows::UI::Colors::Green);
                 }));
 
