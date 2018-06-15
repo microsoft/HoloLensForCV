@@ -23,7 +23,7 @@ namespace SensorStreaming
     public ref class SensorStreamViewer sealed
     {
     public:
-		SensorStreamViewer();
+        SensorStreamViewer();
         virtual ~SensorStreamViewer();
 
         void Start();
@@ -50,7 +50,7 @@ namespace SensorStreaming
         /// </summary>
         void NextButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 
-        void OnTick(Platform::Object^ sender, Platform::Object^ e);
+        void PlayStopButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 
     private:
         // Private methods.
@@ -89,31 +89,32 @@ namespace SensorStreaming
         static void DebugOutputAllProperties(Windows::Foundation::Collections::IMapView<Platform::Guid, Platform::Object^>^ properties);
 
         void OnPointerPressed(Platform::Object ^sender, Windows::UI::Xaml::Input::PointerRoutedEventArgs ^e);
+
     private:
         // Private data.
         MainPage^ rootPage = MainPage::Current;
-        
-        // The currently selected source group.
-        int m_selectedSourceGroupIndex = 1;
+
+        SimpleLogger^ m_logger;
 
         Platform::Agile<Windows::Media::Capture::MediaCapture> m_mediaCapture;
+        int m_selectedSourceGroupIndex{ 1 };
 
-        std::vector<std::pair<Windows::Media::Capture::Frames::MediaFrameReader^, Windows::Foundation::EventRegistrationToken>> m_readers;
+        struct VolatileState
+        {
+            std::mutex m_mutex;
 
-        //std::map<Windows::Media::Capture::Frames::MediaFrameSourceKind, FrameRenderer^> m_frameRenderers;
-        std::map<int, FrameRenderer^> m_frameRenderers;
-        std::map<int, int> m_FrameReadersToSourceIdMap;
+            // The currently selected source group.
+            int m_selectedStreamId{ 1 };
 
-        std::map<int, int> m_frameCount;
-        
-        SimpleLogger^ m_logger;
-        void PlayStopButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
-        bool m_isPlaying;
-        int m_selectedStreamId;
+            std::vector<std::pair<Windows::Media::Capture::Frames::MediaFrameReader^, Windows::Foundation::EventRegistrationToken>> m_readers;
 
-        // Setting this to false enabled displaying all the streams atlease for one frame
-        bool m_firstRunComplete = true;
+            //std::map<Windows::Media::Capture::Frames::MediaFrameSourceKind, FrameRenderer^> m_frameRenderers;
+            std::map<int, FrameRenderer^> m_frameRenderers;
+            std::map<int, int> m_FrameReadersToSourceIdMap;
+            std::map<int, int> m_frameCount;
 
-        concurrency::critical_section m_stateLock;
+            // Setting this to false enabled displaying all the streams atlease for one frame
+            bool m_firstRunComplete{ false };
+        } m_volatileState;
     };
 }

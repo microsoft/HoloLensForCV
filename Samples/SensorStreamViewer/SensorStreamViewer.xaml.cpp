@@ -16,8 +16,6 @@
 #include "FrameRenderer.h"
 #include <unordered_set>
 
-#pragma optimize ("", off)
-
 using namespace SensorStreaming;
 
 using namespace concurrency;
@@ -32,14 +30,11 @@ using namespace Windows::UI::Xaml::Media::Imaging;
 
 
 
-SensorStreamViewer::SensorStreamViewer() :
-    m_selectedStreamId(1),
-    m_isPlaying(false)
+SensorStreamViewer::SensorStreamViewer()
 {
     InitializeComponent();
     m_logger = ref new SimpleLogger(outputTextBlock);
     this->PlayStopButton->IsEnabled = false;
-    
 }
 
 SensorStreaming::SensorStreamViewer::~SensorStreamViewer()
@@ -139,6 +134,8 @@ task<void> SensorStreamViewer::LoadMediaSourceWorkerAsync()
 
             for (IKeyValuePair<String^, MediaFrameSource^>^ kvp : m_mediaCapture->FrameSources)
             {
+                std::lock_guard<std::mutex> lockGuard(m_volatileState.m_mutex);
+
                 MediaFrameSource^ source = kvp->Value;
                 MediaFrameSourceKind kind = source->Info->SourceKind;
 
@@ -148,18 +145,17 @@ task<void> SensorStreamViewer::LoadMediaSourceWorkerAsync()
                 Platform::String^ sensorName(kind.ToString());
 
 #if DEBUG_PRINT_PROPERTIES 
-                    DebugOutputAllProperties(source->Info->Properties);
+                DebugOutputAllProperties(source->Info->Properties);
 #endif
 
                 GetSensorName(source, sensorName);
 
                 // Create the Sensor views
                 SensorImageControl^ imageControl = ref new SensorImageControl(id, sensorName);
-                imageControl->Background = ref new Windows::UI::Xaml::Media::SolidColorBrush(Windows::UI::Colors::Green);
-                m_frameRenderers[id] = imageControl->GetRenderer();
-                m_frameRenderers[id]->SetSensorName(sensorName);
-                imageControl->PointerPressed += ref new Windows::UI::Xaml::Input::PointerEventHandler(this, &SensorStreaming::SensorStreamViewer::OnPointerPressed);
 
+                m_volatileState.m_frameRenderers[id] = imageControl->GetRenderer();
+                m_volatileState.m_frameRenderers[id]->SetSensorName(sensorName);
+                
                 Windows::UI::Core::CoreDispatcher^ uiThreadDispatcher =
                     Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher;
 
@@ -171,11 +167,13 @@ task<void> SensorStreamViewer::LoadMediaSourceWorkerAsync()
                     StreamGrid->Children->Append(imageControl);
                     imageControl->SetValue(Windows::UI::Xaml::Controls::Grid::RowProperty, id / 4);
                     imageControl->SetValue(Windows::UI::Xaml::Controls::Grid::ColumnProperty, id - ((id / 4) * 4));
+                    imageControl->PointerPressed += ref new Windows::UI::Xaml::Input::PointerEventHandler(this, &SensorStreaming::SensorStreamViewer::OnPointerPressed);
+                    imageControl->Background = ref new Windows::UI::Xaml::Media::SolidColorBrush(Windows::UI::Colors::Green);
                 }));
 
 
                 // Read all frames the first time
-                if (m_firstRunComplete && (id != m_selectedStreamId))
+                if (m_volatileState.m_firstRunComplete && (id != m_volatileState.m_selectedStreamId))
                 {
                     continue;
                 }
@@ -204,14 +202,16 @@ task<void> SensorStreamViewer::LoadMediaSourceWorkerAsync()
                     }, task_continuation_context::get_current_winrt_context())
                         .then([this, kind, source, id](MediaFrameReader^ frameReader)
                     {
+                        std::lock_guard<std::mutex> lockGuard(m_volatileState.m_mutex);
+
                         // Add frame reader to the internal lookup
-                        m_FrameReadersToSourceIdMap[frameReader->GetHashCode()] = id;
+                        m_volatileState.m_FrameReadersToSourceIdMap[frameReader->GetHashCode()] = id;
 
                         EventRegistrationToken token = frameReader->FrameArrived +=
                             ref new TypedEventHandler<MediaFrameReader^, MediaFrameArrivedEventArgs^>(this, &SensorStreamViewer::FrameReader_FrameArrived);
 
                         // Keep track of created reader and event handler so it can be stopped later.
-                        m_readers.push_back(std::make_pair(frameReader, token));
+                        m_volatileState.m_readers.push_back(std::make_pair(frameReader, token));
 
                         m_logger->Log(kind.ToString() + " reader created");
 
@@ -305,7 +305,9 @@ task<void> SensorStreamViewer::CleanupMediaCaptureAsync()
 
     if (m_mediaCapture != nullptr)
     {
-        for (auto& readerAndToken : m_readers)
+        std::lock_guard<std::mutex> lockGuard(m_volatileState.m_mutex);
+
+        for (auto& readerAndToken : m_volatileState.m_readers)
         {
             MediaFrameReader^ reader = readerAndToken.first;
             EventRegistrationToken token = readerAndToken.second;
@@ -315,10 +317,10 @@ task<void> SensorStreamViewer::CleanupMediaCaptureAsync()
         }
         cleanupTask = cleanupTask.then([this] {
             m_logger->Log("Cleaning up MediaCapture...");
-            m_readers.clear();
-            m_frameRenderers.clear();
-            m_FrameReadersToSourceIdMap.clear();
-            m_frameCount.clear();
+            m_volatileState.m_readers.clear();
+            m_volatileState.m_frameRenderers.clear();
+            m_volatileState.m_FrameReadersToSourceIdMap.clear();
+            m_volatileState.m_frameCount.clear();
             m_mediaCapture = nullptr;
         });
     }
@@ -397,27 +399,38 @@ void SensorStreamViewer::FrameReader_FrameArrived(MediaFrameReader^ sender, Medi
     {
         if (frame != nullptr)
         {
-#if DEBUG_PRINT_PROPERTIES 
-            DebugOutputAllProperties(source->Info->Properties);
-#endif
-            // Find the corresponding source id
-            VERIFY(m_FrameReadersToSourceIdMap.count(sender->GetHashCode()) != 0);
-            int sourceId = m_FrameReadersToSourceIdMap[sender->GetHashCode()];
+            FrameRenderer^ frameRenderer = nullptr;
 
-            m_frameRenderers[sourceId]->ProcessFrame(frame);
-            m_frameCount[sourceId]++;
-            
-            if (!m_firstRunComplete)
             {
-                // first run is complete if all the streams have atleast one frame
-                bool allStreamsGotFrames = (m_frameCount.size() == m_frameRenderers.size());
+                std::lock_guard<std::mutex> lockGuard(m_volatileState.m_mutex);
 
-                m_firstRunComplete = allStreamsGotFrames;
-                if (allStreamsGotFrames)
+                // Find the corresponding source id
+                VERIFY(m_volatileState.m_FrameReadersToSourceIdMap.count(sender->GetHashCode()) != 0);
+                int sourceId = m_volatileState.m_FrameReadersToSourceIdMap[sender->GetHashCode()];
+
+                frameRenderer = m_volatileState.m_frameRenderers[sourceId];
+                m_volatileState.m_frameCount[sourceId]++;
+
+                if (!m_volatileState.m_firstRunComplete)
                 {
-                    m_selectedStreamId = 1;
-                    LoadMediaSourceAsync();
+                    // first run is complete if all the streams have atleast one frame
+                    bool allStreamsGotFrames = (m_volatileState.m_frameCount.size() == m_volatileState.m_frameRenderers.size());
+
+                    m_volatileState.m_firstRunComplete = allStreamsGotFrames;
+
+#if 0
+                    if (allStreamsGotFrames)
+                    {
+                        m_volatileState.m_selectedStreamId = 1;
+                        LoadMediaSourceAsync();
+                    }
+#endif
                 }
+            }
+
+            if (frameRenderer)
+            {
+                frameRenderer->ProcessFrame(frame);
             }
         }
     }
@@ -458,10 +471,10 @@ void SensorStreaming::SensorStreamViewer::OnPointerPressed(Platform::Object^ sen
     auto imageControl = dynamic_cast<SensorImageControl^>(sender);
     if (imageControl != nullptr)
     {
-        concurrency::critical_section::scoped_lock lock(m_stateLock);
-        if (imageControl->GetId() != m_selectedStreamId)
+        std::lock_guard<std::mutex> lockGuard(m_volatileState.m_mutex);
+        if (imageControl->GetId() != m_volatileState.m_selectedStreamId)
         {
-            m_selectedStreamId = imageControl->GetId();
+            m_volatileState.m_selectedStreamId = imageControl->GetId();
             LoadMediaSourceAsync();
         }
     }
