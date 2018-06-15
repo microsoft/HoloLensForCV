@@ -301,93 +301,102 @@ SoftwareBitmap^ FrameRenderer::ConvertToDisplayableImage(VideoMediaFrame^ inputF
         return nullptr;
     }
 
-    SoftwareBitmap^ inputBitmap = inputFrame->SoftwareBitmap;
-    auto mode = inputBitmap->BitmapAlphaMode;
-
-    switch (inputFrame->FrameReference->SourceKind)
+    try
     {
-    case MediaFrameSourceKind::Color:
-        // XAML requires Bgra8 with premultiplied alpha.
-        // We requested Bgra8 from the MediaFrameReader, so all that's
-        // left is fixing the alpha channel if necessary.
-        if (inputBitmap->BitmapPixelFormat != BitmapPixelFormat::Bgra8)
+        SoftwareBitmap^ inputBitmap =
+            inputFrame->SoftwareBitmap;
+
+        switch (inputFrame->FrameReference->SourceKind)
         {
-            OutputDebugStringW(L"Color format should have been Bgra8.\r\n");
-        }
-        else if (inputBitmap->PixelWidth == 640 / 4)
-        {
-            return TransformVlcBitmap(inputBitmap);
-        }
-        else
-        {
+        case MediaFrameSourceKind::Color:
+            // XAML requires Bgra8 with premultiplied alpha.
+            // We requested Bgra8 from the MediaFrameReader, so all that's
+            // left is fixing the alpha channel if necessary.
+            if (inputBitmap->BitmapPixelFormat != BitmapPixelFormat::Bgra8)
+            {
+                OutputDebugStringW(L"Color format should have been Bgra8.\r\n");
+            }
+            else if (inputBitmap->PixelWidth == 640 / 4)
+            {
+                return TransformVlcBitmap(inputBitmap);
+            }
+            else
+            {
 #if 0
-            if (inputBitmap->BitmapAlphaMode == BitmapAlphaMode::Premultiplied)
-            {
-                // Already in the correct format.
-                return SoftwareBitmap::Copy(inputBitmap);
-            }
-            else
-            {
-                // Convert to premultiplied alpha.
-                return SoftwareBitmap::Convert(inputBitmap, BitmapPixelFormat::Bgra8, BitmapAlphaMode::Premultiplied);
-            }
+                if (inputBitmap->BitmapAlphaMode == BitmapAlphaMode::Premultiplied)
+                {
+                    // Already in the correct format.
+                    return SoftwareBitmap::Copy(inputBitmap);
+                }
+                else
+                {
+                    // Convert to premultiplied alpha.
+                    return SoftwareBitmap::Convert(inputBitmap, BitmapPixelFormat::Bgra8, BitmapAlphaMode::Premultiplied);
+                }
 #else
-            return DeepCopyBitmap(inputBitmap);
+                return DeepCopyBitmap(inputBitmap);
 #endif
-        }
-        return nullptr;
+            }
+            return nullptr;
 
-    case MediaFrameSourceKind::Depth:
-        // We requested D16 from the MediaFrameReader, so the frame should
-        // be in Gray16 format.
+        case MediaFrameSourceKind::Depth:
+            // We requested D16 from the MediaFrameReader, so the frame should
+            // be in Gray16 format.
 
-        if (inputBitmap->BitmapPixelFormat == BitmapPixelFormat::Gray16)
-        {
-            using namespace std::placeholders;
-
-            // Use a special pseudo color to render 16 bits depth frame.
-            // Since we must scale the output appropriately we use std::bind to
-            // create a function that takes the depth scale as input but also matches
-            // the required signature.
-            const float depthScale = 1.0f / 1000.0f;
-            float minReliableDepth, maxReliableDepth;
-
-            if (m_sensorName == L"Long Throw ToF Depth")
+            if (inputBitmap->BitmapPixelFormat == BitmapPixelFormat::Gray16)
             {
-                minReliableDepth = 0.5f;
-                maxReliableDepth = 4.0f;
+                using namespace std::placeholders;
+
+                // Use a special pseudo color to render 16 bits depth frame.
+                // Since we must scale the output appropriately we use std::bind to
+                // create a function that takes the depth scale as input but also matches
+                // the required signature.
+                const float depthScale = 1.0f / 1000.0f;
+                float minReliableDepth, maxReliableDepth;
+
+                if (m_sensorName == L"Long Throw ToF Depth")
+                {
+                    minReliableDepth = 0.5f;
+                    maxReliableDepth = 4.0f;
+                }
+                else
+                {
+                    minReliableDepth = 0.2f;
+                    maxReliableDepth = 1.0f;
+                }
+
+                return TransformBitmap(inputBitmap, std::bind(&PseudoColorForDepth, _1, _2, _3, depthScale, minReliableDepth, maxReliableDepth));
             }
             else
             {
-                minReliableDepth = 0.2f;
-                maxReliableDepth = 1.0f;
+                OutputDebugStringW(L"Depth format in unexpected format.\r\n");
             }
-
-            return TransformBitmap(inputBitmap, std::bind(&PseudoColorForDepth, _1, _2, _3, depthScale, minReliableDepth, maxReliableDepth));
-        }
-        else
-        {
-            OutputDebugStringW(L"Depth format in unexpected format.\r\n");
-        }
-        return nullptr;
-
-    case MediaFrameSourceKind::Infrared:
-        // We requested L8 or L16 from the MediaFrameReader, so the frame should
-        // be in Gray8 or Gray16 format. 
-        switch (inputBitmap->BitmapPixelFormat)
-        {
-        case BitmapPixelFormat::Gray8:
-            // Use pseudo color to render 8 bits frames.
-            return TransformBitmap(inputBitmap, PseudoColorFor8BitInfrared);
-
-        case BitmapPixelFormat::Gray16:
-            // Use pseudo color to render 16 bits frames.
-            return TransformBitmap(inputBitmap, PseudoColorFor16BitInfrared);
-
-        default:
-            OutputDebugStringW(L"Infrared format should have been Gray8 or Gray16.\r\n");
             return nullptr;
+
+        case MediaFrameSourceKind::Infrared:
+            // We requested L8 or L16 from the MediaFrameReader, so the frame should
+            // be in Gray8 or Gray16 format. 
+            switch (inputBitmap->BitmapPixelFormat)
+            {
+            case BitmapPixelFormat::Gray8:
+                // Use pseudo color to render 8 bits frames.
+                return TransformBitmap(inputBitmap, PseudoColorFor8BitInfrared);
+
+            case BitmapPixelFormat::Gray16:
+                // Use pseudo color to render 16 bits frames.
+                return TransformBitmap(inputBitmap, PseudoColorFor16BitInfrared);
+
+            default:
+                OutputDebugStringW(L"Infrared format should have been Gray8 or Gray16.\r\n");
+                return nullptr;
+            }
         }
+    }
+    catch (Platform::Exception^ exception)
+    {
+        OutputDebugString(L"FrameRenderer::ConvertToDisplayableImage: exception thrown: ");
+        OutputDebugString(exception->Message->Data());
+        OutputDebugString(L"\n");
     }
 
     return nullptr;
