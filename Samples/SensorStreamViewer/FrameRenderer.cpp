@@ -138,7 +138,7 @@ static void PseudoColorForDepth(int pixelWidth, byte* inputRowBytes, byte* outpu
         // This happens when depth information cannot be calculated, e.g. when objects are too close.
         if (inputRow[x] == 0 || inputRow[x] > 4000)
         {
-            outputRow[x] = { 0 };
+            outputRow[x] = { 0xFF, 0x00, 0x00, 0x7F };
         }
         else
         {
@@ -157,7 +157,14 @@ static void PseudoColorFor16BitInfrared(int pixelWidth, byte* inputRowBytes, byt
     const float rangeReciprocal = 1.0f / static_cast<float>(UINT16_MAX);
     for (int x = 0; x < pixelWidth; x++)
     {
-        outputRow[x] = InfraredColor(inputRow[x] * rangeReciprocal);
+        if (inputRow[x] == 0)
+        {
+            outputRow[x] = { 0xFF, 0x00, 0x00, 0x7F };
+        }
+        else
+        {
+            outputRow[x] = InfraredColor(inputRow[x] * rangeReciprocal);
+        }
     }
 }
 
@@ -168,7 +175,14 @@ static void PseudoColorFor8BitInfrared(int pixelWidth, byte* inputRowBytes, byte
     const float rangeReciprocal = 1.0f / static_cast<float>(UINT8_MAX);
     for (int x = 0; x < pixelWidth; x++)
     {
-        outputRow[x] = InfraredColor(inputRowBytes[x] * rangeReciprocal);
+        if (inputRowBytes[x] == 0)
+        {
+            outputRow[x] = { 0xFF, 0x00, 0x00, 0x7F };
+        }
+        else
+        {
+            outputRow[x] = InfraredColor(inputRowBytes[x] * rangeReciprocal);
+        }
     }
 }
 
