@@ -217,54 +217,54 @@ void FrameRenderer::ProcessFrame(Windows::Media::Capture::Frames::MediaFrameRefe
         return;
     }
 
-    SoftwareBitmap^ softwareBitmap = ConvertToDisplayableImage(frame->VideoMediaFrame);
-    if (softwareBitmap != nullptr)
+    //
+    // Allow a few frames to be buffered...
+    //
+    if (InterlockedIncrement(&m_numberOfTasksScheduled) > c_maxNumberOfTasksScheduled)
     {
-#if 0
-        // Swap the processed frame to _backBuffer, and trigger the UI thread to render it.
-        softwareBitmap = InterlockedExchangeRefPointer(&m_backBuffer, softwareBitmap);
+        InterlockedDecrement(&m_numberOfTasksScheduled);
 
-        // UI thread always resets m_backBuffer before using it. Unused bitmap should be disposed.
-        delete softwareBitmap;
-
-        // Changes to the XAML ImageElement must happen in the UI thread, via the CoreDispatcher.
-        m_imageElement->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal,
-            ref new Windows::UI::Core::DispatchedHandler([this]()
-        {
-            // Don't let two copies of this task run at the same time.
-            if (m_taskRunning)
-            {
-                return;
-            }
-
-            m_taskRunning = true;
-
-            // Keep draining frames from the backbuffer until the backbuffer is empty.
-            DrainBackBufferAsync();
-        }));
-#else
-        Windows::UI::Core::CoreDispatcher^ uiThreadDispatcher =
-            Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher;
-
-        uiThreadDispatcher->RunAsync(
-            Windows::UI::Core::CoreDispatcherPriority::Normal,
-            ref new Windows::UI::Core::DispatchedHandler(
-                [this, softwareBitmap]()
-        {
-            Windows::UI::Xaml::Media::Imaging::SoftwareBitmapSource^ imageSource =
-                ref new Windows::UI::Xaml::Media::Imaging::SoftwareBitmapSource();
-
-            concurrency::create_task(
-                imageSource->SetBitmapAsync(softwareBitmap)
-            ).then(
-                [this, imageSource]()
-            {
-                m_imageElement->Source = imageSource;
-
-            }, concurrency::task_continuation_context::use_current());
-        }));
-#endif
+        return;
     }
+
+    SoftwareBitmap^ softwareBitmap = ConvertToDisplayableImage(frame->VideoMediaFrame);
+    if (!softwareBitmap)
+    {
+        InterlockedDecrement(&m_numberOfTasksScheduled);
+
+        return;
+    }
+
+    m_imageElement->Dispatcher->RunAsync(
+        Windows::UI::Core::CoreDispatcherPriority::Normal,
+        ref new Windows::UI::Core::DispatchedHandler(
+            [this, softwareBitmap]()
+    {
+        InterlockedDecrement(&m_numberOfTasksScheduled);
+
+        //
+        // ..but don't let too many copies of this task run at the same time:
+        //
+        if (InterlockedIncrement(&m_numberOfTasksRunning) > c_maxNumberOfTasksRunning)
+        {
+            InterlockedDecrement(&m_numberOfTasksRunning);
+
+            return;
+        }
+
+        Windows::UI::Xaml::Media::Imaging::SoftwareBitmapSource^ imageSource =
+            ref new Windows::UI::Xaml::Media::Imaging::SoftwareBitmapSource();
+
+        concurrency::create_task(
+            imageSource->SetBitmapAsync(softwareBitmap)
+        ).then([this, imageSource]()
+        {
+            m_imageElement->Source = imageSource;
+
+            InterlockedDecrement(&m_numberOfTasksRunning);
+
+        }, concurrency::task_continuation_context::use_current());
+    }));
 }
 
 String^ FrameRenderer::GetSubtypeForFrameReader(MediaFrameSourceKind kind, MediaFrameFormat^ format)

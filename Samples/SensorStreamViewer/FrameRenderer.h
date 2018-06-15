@@ -76,7 +76,12 @@ namespace SensorStreaming
 
 #if 0
         Windows::Graphics::Imaging::SoftwareBitmap^ m_backBuffer;
-        bool m_taskRunning = false;
 #endif
+
+        static const int32_t c_maxNumberOfTasksScheduled{ 1 };
+        static const int32_t c_maxNumberOfTasksRunning{ 1 };
+
+        volatile long m_numberOfTasksScheduled{ 0 };
+        volatile long m_numberOfTasksRunning{ 0 };
     };
 }
