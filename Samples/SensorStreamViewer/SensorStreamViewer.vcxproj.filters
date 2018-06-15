@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Assets">
+      <UniqueIdentifier>80bfd669-aa83-4537-9611-027cffe0d8af</UniqueIdentifier>
+      <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
+    </Filter>
+    <Filter Include="Styles">
+      <UniqueIdentifier>{c6978fb6-bc64-498d-97c8-f5b53997e54e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MediaCapture">
+      <UniqueIdentifier>{fd17733f-d8bf-4098-ae11-e28c7b9a588e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MainPage.xaml.cpp" />
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="App.xaml.cpp" />
+    <ClCompile Include="FrameRenderer.cpp" />
+    <ClCompile Include="FrameSourceViewModels.cpp" />
+    <ClCompile Include="SensorStreamViewer.xaml.cpp" />
+    <ClCompile Include="SensorImageControl.xaml.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="MainPage.xaml.h" />
+    <ClInclude Include="App.xaml.h" />
+    <ClInclude Include="FrameRenderer.h" />
+    <ClInclude Include="LookupTable.h" />
+    <ClInclude Include="FrameSourceViewModels.h" />
+    <ClInclude Include="SimpleLogger.h" />
+    <ClInclude Include="SensorStreamViewer.xaml.h" />
+    <ClInclude Include="MFPropertyGuids.h" />
+    <ClInclude Include="SensorImageControl.xaml.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="MainPage.xaml" />
+    <Page Include="Styles\Styles.xaml">
+      <Filter>Styles</Filter>
+    </Page>
+    <Page Include="SensorStreamViewer.xaml" />
+    <Page Include="SensorImageControl.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Media\smalltile-sdk.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Media\splash-sdk.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Media\squaretile-sdk.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Media\storelogo-sdk.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Media\tile-sdk.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Media\windows-sdk.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="Media\microsoft-sdk.png">
+      <Filter>Assets</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SensorStreamViewer_TemporaryKey.pfx" />
+  </ItemGroup>
+</Project>
