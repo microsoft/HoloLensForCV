@@ -51,10 +51,12 @@ Microsoft::WRL::ComPtr<T> AsComPtr(Platform::Object^ object)
 #pragma endregion
 
 // Structure used to access colors stored in 8-bit BGRA format.
+#pragma pack (push, 1)
 struct ColorBGRA
 {
     byte B, G, R, A;
 };
+#pragma pack(pop)
 
 // Colors to map values to based on intensity.
 static constexpr std::array<ColorBGRA, 9> colorRamp = {
@@ -425,12 +427,16 @@ SoftwareBitmap^ FrameRenderer::TransformVlcBitmap(SoftwareBitmap^ inputBitmap)
 
         uint8_t* inputRow = reinterpret_cast<uint8_t*>(inputRowBytes);
         ColorBGRA* outputRow = reinterpret_cast<ColorBGRA*>(outputRowBytes);
+
         for (int x = 0; x < 640; x++)
         {
-            outputRow[x].R = inputRow[x];
-            outputRow[x].G = inputRow[x];
-            outputRow[x].B = inputRow[x];
-            outputRow[x].A = 255;
+            const byte input = inputRow[x];
+            auto& output = outputRow[x];
+
+            output.B = input;
+            output.G = input;
+            output.R = input;
+            output.A = 255;
         }
     }
 
