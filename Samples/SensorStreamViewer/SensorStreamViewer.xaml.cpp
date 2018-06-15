@@ -49,7 +49,7 @@ SensorStreaming::SensorStreamViewer::~SensorStreamViewer()
 
 void SensorStreaming::SensorStreamViewer::Start()
 {
-    PickNextMediaSourceAsync();
+    LoadMediaSourceAsync();
 }
 
 void SensorStreaming::SensorStreamViewer::Stop()
@@ -60,7 +60,7 @@ void SensorStreaming::SensorStreamViewer::Stop()
 
 void SensorStreamViewer::OnNavigatedTo(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e)
 {
-    PickNextMediaSourceAsync();
+    LoadMediaSourceAsync();
 }
 
 void SensorStreamViewer::OnNavigatedFrom(Windows::UI::Xaml::Navigation::NavigationEventArgs^ e)
@@ -70,12 +70,12 @@ void SensorStreamViewer::OnNavigatedFrom(Windows::UI::Xaml::Navigation::Navigati
 
 void SensorStreamViewer::NextButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
 {
-    PickNextMediaSourceAsync();
+    LoadMediaSourceAsync();
 }
 
-task<void> SensorStreamViewer::PickNextMediaSourceAsync()
+task<void> SensorStreamViewer::LoadMediaSourceAsync()
 {
-    return PickNextMediaSourceWorkerAsync()
+    return LoadMediaSourceWorkerAsync()
         .then([this]()
     {
     }, task_continuation_context::use_current());
@@ -100,7 +100,7 @@ int MFSourceIdToStreamId(const std::wstring& sourceIdStr)
     return id;
 }
 
-task<void> SensorStreamViewer::PickNextMediaSourceWorkerAsync()
+task<void> SensorStreamViewer::LoadMediaSourceWorkerAsync()
 {
     return CleanupMediaCaptureAsync()
         .then([this]()
@@ -173,7 +173,9 @@ task<void> SensorStreamViewer::PickNextMediaSourceWorkerAsync()
                     imageControl->SetValue(Windows::UI::Xaml::Controls::Grid::ColumnProperty, id - ((id / 4) * 4));
                 }));
 
-                if (id != m_selectedStreamId)
+
+                // Read all frames the first time
+                if (m_firstRunComplete && (id != m_selectedStreamId))
                 {
                     continue;
                 }
@@ -312,6 +314,7 @@ task<void> SensorStreamViewer::CleanupMediaCaptureAsync()
             cleanupTask = cleanupTask && create_task(reader->StopAsync());
         }
         cleanupTask = cleanupTask.then([this] {
+            m_logger->Log("Cleaning up MediaCapture...");
             m_readers.clear();
             m_frameRenderers.clear();
             m_FrameReadersToSourceIdMap.clear();
@@ -385,6 +388,11 @@ void SensorStreamViewer::FrameReader_FrameArrived(MediaFrameReader^ sender, Medi
     // This can return null if there is no such frame, or if the reader is not in the
     // "Started" state. The latter can occur if a FrameArrived event was in flight
     // when the reader was stopped.
+    if (sender == nullptr)
+    {
+        return;
+    }
+
     if (MediaFrameReference^ frame = sender->TryAcquireLatestFrame())
     {
         if (frame != nullptr)
@@ -397,7 +405,20 @@ void SensorStreamViewer::FrameReader_FrameArrived(MediaFrameReader^ sender, Medi
             int sourceId = m_FrameReadersToSourceIdMap[sender->GetHashCode()];
 
             m_frameRenderers[sourceId]->ProcessFrame(frame);
-            m_frameCount[frame->SourceKind]++;
+            m_frameCount[sourceId]++;
+            
+            if (!m_firstRunComplete)
+            {
+                // first run is complete if all the streams have atleast one frame
+                bool allStreamsGotFrames = (m_frameCount.size() == m_frameRenderers.size());
+
+                m_firstRunComplete = allStreamsGotFrames;
+                if (allStreamsGotFrames)
+                {
+                    m_selectedStreamId = 1;
+                    LoadMediaSourceAsync();
+                }
+            }
         }
     }
 }
@@ -441,7 +462,7 @@ void SensorStreaming::SensorStreamViewer::OnPointerPressed(Platform::Object^ sen
         if (imageControl->GetId() != m_selectedStreamId)
         {
             m_selectedStreamId = imageControl->GetId();
-            PickNextMediaSourceAsync();
+            LoadMediaSourceAsync();
         }
     }
 }

@@ -31,6 +31,14 @@ namespace SensorStreaming
             Platform::String^ newMessage = "[" + messageNumber.ToString() + "] " +
                 formatter->Format(calendar->GetDateTime()) + " : " + message;
 
+#if _DEBUG
+            if (IsDebuggerPresent())
+            {
+                OutputDebugStringW(reinterpret_cast<const wchar_t*>(newMessage->Data()));
+                OutputDebugStringW(L"\n");
+            }
+#endif
+
             m_dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Low,
                 ref new Windows::UI::Core::DispatchedHandler(
                     [this, newMessage]()

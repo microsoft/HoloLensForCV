@@ -57,12 +57,12 @@ namespace SensorStreaming
         /// <summary>
         /// Disable the Next button while we switch to the next eligible media source.
         /// </summary>
-        concurrency::task<void> PickNextMediaSourceAsync();
+        concurrency::task<void> LoadMediaSourceAsync();
 
         /// <summary>
         /// Switch to the next eligible media source.
         /// </summary>
-        concurrency::task<void> PickNextMediaSourceWorkerAsync();
+        concurrency::task<void> LoadMediaSourceWorkerAsync();
 
         /// <summary>
         /// Stop streaming from all readers and dispose all readers and media capture object.
@@ -104,12 +104,15 @@ namespace SensorStreaming
         std::map<int, FrameRenderer^> m_frameRenderers;
         std::map<int, int> m_FrameReadersToSourceIdMap;
 
-        std::map<Windows::Media::Capture::Frames::MediaFrameSourceKind, int> m_frameCount;
+        std::map<int, int> m_frameCount;
         
         SimpleLogger^ m_logger;
         void PlayStopButton_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
         bool m_isPlaying;
         int m_selectedStreamId;
+
+        // Setting this to false enabled displaying all the streams atlease for one frame
+        bool m_firstRunComplete = true;
 
         concurrency::critical_section m_stateLock;
     };
