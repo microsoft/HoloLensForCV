@@ -197,33 +197,6 @@ void FrameRenderer::SetSensorName(Platform::String^ sensorName)
     m_sensorName = sensorName;
 }
 
-#if 0
-Concurrency::task<void> FrameRenderer::DrainBackBufferAsync()
-{
-    // Keep draining frames from the backbuffer until the backbuffer is empty.
-    SoftwareBitmap^ latestBitmap = InterlockedExchangeRefPointer(&m_backBuffer, nullptr);
-    if (latestBitmap != nullptr)
-    {
-        if (SoftwareBitmapSource^ imageSource = dynamic_cast<SoftwareBitmapSource^>(m_imageElement->Source))
-        {
-            return create_task(imageSource->SetBitmapAsync(latestBitmap))
-                .then([this]()
-            {
-                return DrainBackBufferAsync();
-            }, task_continuation_context::use_current());
-        }
-    }
-
-    // To avoid a race condition against ProcessFrame, we cannot let any other
-    // tasks run on the UI thread between point that the InterlockedExchangeRefPointer
-    // reports that there is no more work, and we clear the m_taskRunning flag on
-    // the UI thread.
-    m_taskRunning = false;
-
-    return task_from_result();
-}
-#endif
-
 void FrameRenderer::ProcessFrame(Windows::Media::Capture::Frames::MediaFrameReference^ frame)
 {
     if (frame == nullptr)

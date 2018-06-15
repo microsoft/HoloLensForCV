@@ -63,20 +63,9 @@ namespace SensorStreaming
         Windows::Graphics::Imaging::SoftwareBitmap^ ConvertToDisplayableImage(
             Windows::Media::Capture::Frames::VideoMediaFrame^ inputFrame);
 
-#if 0
-        /// <summary>
-        /// Keep presenting the m_backBuffer until there are no more.
-        /// </summary>
-        Concurrency::task<void> DrainBackBufferAsync();
-#endif
-
     private: // Private data.
         Windows::UI::Xaml::Controls::Image^ m_imageElement;
         Platform::String^ m_sensorName;
-
-#if 0
-        Windows::Graphics::Imaging::SoftwareBitmap^ m_backBuffer;
-#endif
 
         static const int32_t c_maxNumberOfTasksScheduled{ 1 };
         static const int32_t c_maxNumberOfTasksRunning{ 1 };
