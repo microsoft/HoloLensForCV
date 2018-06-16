@@ -51,10 +51,12 @@ Microsoft::WRL::ComPtr<T> AsComPtr(Platform::Object^ object)
 #pragma endregion
 
 // Structure used to access colors stored in 8-bit BGRA format.
+#pragma pack (push, 1)
 struct ColorBGRA
 {
     byte B, G, R, A;
 };
+#pragma pack(pop)
 
 // Colors to map values to based on intensity.
 static constexpr std::array<ColorBGRA, 9> colorRamp = {
@@ -126,26 +128,22 @@ static ColorBGRA InfraredColor(float value)
 static void PseudoColorForDepth(int pixelWidth, byte* inputRowBytes, byte* outputRowBytes, float depthScale, float minReliableDepth, float maxReliableDepth)
 {
     // Visualize space in front of your desktop, in meters.
-    float minInMeters = minReliableDepth * depthScale;
-    float maxInMeters = maxReliableDepth * depthScale;
-    float one_min = 1.0f / minInMeters;
-    float range = 1.0f / maxInMeters - one_min;
+    const float rangeReciprocal = 1.0f / (maxReliableDepth - minReliableDepth);
 
     UINT16* inputRow = reinterpret_cast<UINT16*>(inputRowBytes);
     ColorBGRA* outputRow = reinterpret_cast<ColorBGRA*>(outputRowBytes);
     for (int x = 0; x < pixelWidth; x++)
     {
-        float depth = static_cast<float>(inputRow[x]) * depthScale;
-
         // Map invalid depth values to transparent pixels.
         // This happens when depth information cannot be calculated, e.g. when objects are too close.
-        if (depth == 0)
+        if (inputRow[x] == 0 || inputRow[x] > 4000)
         {
-            outputRow[x] = { 0 };
+            outputRow[x] = { 0xFF, 0x00, 0x00, 0x7F };
         }
         else
         {
-            float alpha = (depth - minReliableDepth) / (maxReliableDepth - minReliableDepth);
+            const float depth = static_cast<float>(inputRow[x]) * depthScale;
+            const float alpha = (depth - minReliableDepth) * rangeReciprocal;
             outputRow[x] = PseudoColor(alpha);
         }
     }
@@ -156,9 +154,17 @@ static void PseudoColorFor16BitInfrared(int pixelWidth, byte* inputRowBytes, byt
 {
     UINT16* inputRow = reinterpret_cast<UINT16*>(inputRowBytes);
     ColorBGRA* outputRow = reinterpret_cast<ColorBGRA*>(outputRowBytes);
+    const float rangeReciprocal = 1.0f / static_cast<float>(UINT16_MAX);
     for (int x = 0; x < pixelWidth; x++)
     {
-        outputRow[x] = InfraredColor(inputRow[x] / static_cast<float>(UINT16_MAX));
+        if (inputRow[x] == 0)
+        {
+            outputRow[x] = { 0xFF, 0x00, 0x00, 0x7F };
+        }
+        else
+        {
+            outputRow[x] = InfraredColor(inputRow[x] * rangeReciprocal);
+        }
     }
 }
 
@@ -166,9 +172,17 @@ static void PseudoColorFor16BitInfrared(int pixelWidth, byte* inputRowBytes, byt
 static void PseudoColorFor8BitInfrared(int pixelWidth, byte* inputRowBytes, byte* outputRowBytes)
 {
     ColorBGRA* outputRow = reinterpret_cast<ColorBGRA*>(outputRowBytes);
+    const float rangeReciprocal = 1.0f / static_cast<float>(UINT8_MAX);
     for (int x = 0; x < pixelWidth; x++)
     {
-        outputRow[x] = InfraredColor(inputRowBytes[x] / static_cast<float>(UINT8_MAX));
+        if (inputRowBytes[x] == 0)
+        {
+            outputRow[x] = { 0xFF, 0x00, 0x00, 0x7F };
+        }
+        else
+        {
+            outputRow[x] = InfraredColor(inputRowBytes[x] * rangeReciprocal);
+        }
     }
 }
 
@@ -178,32 +192,10 @@ FrameRenderer::FrameRenderer(Image^ imageElement)
     m_imageElement->Source = ref new SoftwareBitmapSource();
 }
 
-#if 0
-Concurrency::task<void> FrameRenderer::DrainBackBufferAsync()
+void FrameRenderer::SetSensorName(Platform::String^ sensorName)
 {
-    // Keep draining frames from the backbuffer until the backbuffer is empty.
-    SoftwareBitmap^ latestBitmap = InterlockedExchangeRefPointer(&m_backBuffer, nullptr);
-    if (latestBitmap != nullptr)
-    {
-        if (SoftwareBitmapSource^ imageSource = dynamic_cast<SoftwareBitmapSource^>(m_imageElement->Source))
-        {
-            return create_task(imageSource->SetBitmapAsync(latestBitmap))
-                .then([this]()
-            {
-                return DrainBackBufferAsync();
-            }, task_continuation_context::use_current());
-        }
-    }
-
-    // To avoid a race condition against ProcessFrame, we cannot let any other
-    // tasks run on the UI thread between point that the InterlockedExchangeRefPointer
-    // reports that there is no more work, and we clear the m_taskRunning flag on
-    // the UI thread.
-    m_taskRunning = false;
-
-    return task_from_result();
+    m_sensorName = sensorName;
 }
-#endif
 
 void FrameRenderer::ProcessFrame(Windows::Media::Capture::Frames::MediaFrameReference^ frame)
 {
@@ -212,54 +204,54 @@ void FrameRenderer::ProcessFrame(Windows::Media::Capture::Frames::MediaFrameRefe
         return;
     }
 
-    SoftwareBitmap^ softwareBitmap = ConvertToDisplayableImage(frame->VideoMediaFrame);
-    if (softwareBitmap != nullptr)
+    //
+    // Allow a few frames to be buffered...
+    //
+    if (InterlockedIncrement(&m_numberOfTasksScheduled) > c_maxNumberOfTasksScheduled)
     {
-#if 0
-        // Swap the processed frame to _backBuffer, and trigger the UI thread to render it.
-        softwareBitmap = InterlockedExchangeRefPointer(&m_backBuffer, softwareBitmap);
+        InterlockedDecrement(&m_numberOfTasksScheduled);
 
-        // UI thread always resets m_backBuffer before using it. Unused bitmap should be disposed.
-        delete softwareBitmap;
-
-        // Changes to the XAML ImageElement must happen in the UI thread, via the CoreDispatcher.
-        m_imageElement->Dispatcher->RunAsync(Windows::UI::Core::CoreDispatcherPriority::Normal,
-            ref new Windows::UI::Core::DispatchedHandler([this]()
-        {
-            // Don't let two copies of this task run at the same time.
-            if (m_taskRunning)
-            {
-                return;
-            }
-
-            m_taskRunning = true;
-
-            // Keep draining frames from the backbuffer until the backbuffer is empty.
-            DrainBackBufferAsync();
-        }));
-#else
-        Windows::UI::Core::CoreDispatcher^ uiThreadDispatcher =
-            Windows::ApplicationModel::Core::CoreApplication::MainView->CoreWindow->Dispatcher;
-
-        uiThreadDispatcher->RunAsync(
-            Windows::UI::Core::CoreDispatcherPriority::Normal,
-            ref new Windows::UI::Core::DispatchedHandler(
-                [this, softwareBitmap]()
-        {
-            Windows::UI::Xaml::Media::Imaging::SoftwareBitmapSource^ imageSource =
-                ref new Windows::UI::Xaml::Media::Imaging::SoftwareBitmapSource();
-
-            concurrency::create_task(
-                imageSource->SetBitmapAsync(softwareBitmap)
-            ).then(
-                [this, imageSource]()
-            {
-                m_imageElement->Source = imageSource;
-
-            }, concurrency::task_continuation_context::use_current());
-        }));
-#endif
+        return;
     }
+
+    SoftwareBitmap^ softwareBitmap = ConvertToDisplayableImage(frame->VideoMediaFrame);
+    if (!softwareBitmap)
+    {
+        InterlockedDecrement(&m_numberOfTasksScheduled);
+
+        return;
+    }
+
+    m_imageElement->Dispatcher->RunAsync(
+        Windows::UI::Core::CoreDispatcherPriority::Normal,
+        ref new Windows::UI::Core::DispatchedHandler(
+            [this, softwareBitmap]()
+    {
+        InterlockedDecrement(&m_numberOfTasksScheduled);
+
+        //
+        // ..but don't let too many copies of this task run at the same time:
+        //
+        if (InterlockedIncrement(&m_numberOfTasksRunning) > c_maxNumberOfTasksRunning)
+        {
+            InterlockedDecrement(&m_numberOfTasksRunning);
+
+            return;
+        }
+
+        Windows::UI::Xaml::Media::Imaging::SoftwareBitmapSource^ imageSource =
+            ref new Windows::UI::Xaml::Media::Imaging::SoftwareBitmapSource();
+
+        concurrency::create_task(
+            imageSource->SetBitmapAsync(softwareBitmap)
+        ).then([this, imageSource]()
+        {
+            m_imageElement->Source = imageSource;
+
+            InterlockedDecrement(&m_numberOfTasksRunning);
+
+        }, concurrency::task_continuation_context::use_current());
+    }));
 }
 
 String^ FrameRenderer::GetSubtypeForFrameReader(MediaFrameSourceKind kind, MediaFrameFormat^ format)
@@ -296,82 +288,102 @@ SoftwareBitmap^ FrameRenderer::ConvertToDisplayableImage(VideoMediaFrame^ inputF
         return nullptr;
     }
 
-    SoftwareBitmap^ inputBitmap = inputFrame->SoftwareBitmap;
-    auto mode = inputBitmap->BitmapAlphaMode;
-
-    switch (inputFrame->FrameReference->SourceKind)
+    try
     {
-    case MediaFrameSourceKind::Color:
-        // XAML requires Bgra8 with premultiplied alpha.
-        // We requested Bgra8 from the MediaFrameReader, so all that's
-        // left is fixing the alpha channel if necessary.
-        if (inputBitmap->BitmapPixelFormat != BitmapPixelFormat::Bgra8)
+        SoftwareBitmap^ inputBitmap =
+            inputFrame->SoftwareBitmap;
+
+        switch (inputFrame->FrameReference->SourceKind)
         {
-            OutputDebugStringW(L"Color format should have been Bgra8.\r\n");
-        }
-        else if (inputBitmap->PixelWidth == 640 / 4)
-        {
-            return TransformVlcBitmap(inputBitmap);
-        }
-        else
-        {
-#if 0
-            if (inputBitmap->BitmapAlphaMode == BitmapAlphaMode::Premultiplied)
+        case MediaFrameSourceKind::Color:
+            // XAML requires Bgra8 with premultiplied alpha.
+            // We requested Bgra8 from the MediaFrameReader, so all that's
+            // left is fixing the alpha channel if necessary.
+            if (inputBitmap->BitmapPixelFormat != BitmapPixelFormat::Bgra8)
             {
-                // Already in the correct format.
-                return SoftwareBitmap::Copy(inputBitmap);
+                OutputDebugStringW(L"Color format should have been Bgra8.\r\n");
+            }
+            else if (inputBitmap->PixelWidth == 640 / 4)
+            {
+                return TransformVlcBitmap(inputBitmap);
             }
             else
             {
-                // Convert to premultiplied alpha.
-                return SoftwareBitmap::Convert(inputBitmap, BitmapPixelFormat::Bgra8, BitmapAlphaMode::Premultiplied);
-            }
+#if 0
+                if (inputBitmap->BitmapAlphaMode == BitmapAlphaMode::Premultiplied)
+                {
+                    // Already in the correct format.
+                    return SoftwareBitmap::Copy(inputBitmap);
+                }
+                else
+                {
+                    // Convert to premultiplied alpha.
+                    return SoftwareBitmap::Convert(inputBitmap, BitmapPixelFormat::Bgra8, BitmapAlphaMode::Premultiplied);
+                }
 #else
-            return DeepCopyBitmap(inputBitmap);
+                return DeepCopyBitmap(inputBitmap);
 #endif
-        }
-        return nullptr;
-
-    case MediaFrameSourceKind::Depth:
-        // We requested D16 from the MediaFrameReader, so the frame should
-        // be in Gray16 format.
-
-        if (inputBitmap->BitmapPixelFormat == BitmapPixelFormat::Gray16)
-        {
-            using namespace std::placeholders;
-
-            // Use a special pseudo color to render 16 bits depth frame.
-            // Since we must scale the output appropriately we use std::bind to
-            // create a function that takes the depth scale as input but also matches
-            // the required signature.
-            double depthScale = inputFrame->DepthMediaFrame->DepthFormat->DepthScaleInMeters;
-            float minReliableDepth = 0.2f; // static_cast<float>(inputFrame->DepthMediaFrame->MinReliableDepth);
-            float maxReliableDepth = 1.0f; // static_cast<float>(inputFrame->DepthMediaFrame->MaxReliableDepth);
-            return TransformBitmap(inputBitmap, std::bind(&PseudoColorForDepth, _1, _2, _3, static_cast<float>(depthScale), minReliableDepth, maxReliableDepth));
-        }
-        else
-        {
-            OutputDebugStringW(L"Depth format in unexpected format.\r\n");
-        }
-        return nullptr;
-
-    case MediaFrameSourceKind::Infrared:
-        // We requested L8 or L16 from the MediaFrameReader, so the frame should
-        // be in Gray8 or Gray16 format. 
-        switch (inputBitmap->BitmapPixelFormat)
-        {
-        case BitmapPixelFormat::Gray8:
-            // Use pseudo color to render 8 bits frames.
-            return TransformBitmap(inputBitmap, PseudoColorFor8BitInfrared);
-
-        case BitmapPixelFormat::Gray16:
-            // Use pseudo color to render 16 bits frames.
-            return TransformBitmap(inputBitmap, PseudoColorFor16BitInfrared);
-
-        default:
-            OutputDebugStringW(L"Infrared format should have been Gray8 or Gray16.\r\n");
+            }
             return nullptr;
+
+        case MediaFrameSourceKind::Depth:
+            // We requested D16 from the MediaFrameReader, so the frame should
+            // be in Gray16 format.
+
+            if (inputBitmap->BitmapPixelFormat == BitmapPixelFormat::Gray16)
+            {
+                using namespace std::placeholders;
+
+                // Use a special pseudo color to render 16 bits depth frame.
+                // Since we must scale the output appropriately we use std::bind to
+                // create a function that takes the depth scale as input but also matches
+                // the required signature.
+                const float depthScale = 1.0f / 1000.0f;
+                float minReliableDepth, maxReliableDepth;
+
+                if (m_sensorName == L"Long Throw ToF Depth")
+                {
+                    minReliableDepth = 0.5f;
+                    maxReliableDepth = 4.0f;
+                }
+                else
+                {
+                    minReliableDepth = 0.2f;
+                    maxReliableDepth = 1.0f;
+                }
+
+                return TransformBitmap(inputBitmap, std::bind(&PseudoColorForDepth, _1, _2, _3, depthScale, minReliableDepth, maxReliableDepth));
+            }
+            else
+            {
+                OutputDebugStringW(L"Depth format in unexpected format.\r\n");
+            }
+            return nullptr;
+
+        case MediaFrameSourceKind::Infrared:
+            // We requested L8 or L16 from the MediaFrameReader, so the frame should
+            // be in Gray8 or Gray16 format. 
+            switch (inputBitmap->BitmapPixelFormat)
+            {
+            case BitmapPixelFormat::Gray8:
+                // Use pseudo color to render 8 bits frames.
+                return TransformBitmap(inputBitmap, PseudoColorFor8BitInfrared);
+
+            case BitmapPixelFormat::Gray16:
+                // Use pseudo color to render 16 bits frames.
+                return TransformBitmap(inputBitmap, PseudoColorFor16BitInfrared);
+
+            default:
+                OutputDebugStringW(L"Infrared format should have been Gray8 or Gray16.\r\n");
+                return nullptr;
+            }
         }
+    }
+    catch (Platform::Exception^ exception)
+    {
+        OutputDebugString(L"FrameRenderer::ConvertToDisplayableImage: exception thrown: ");
+        OutputDebugString(exception->Message->Data());
+        OutputDebugString(L"\n");
     }
 
     return nullptr;
@@ -382,8 +394,8 @@ SoftwareBitmap^ FrameRenderer::TransformVlcBitmap(SoftwareBitmap^ inputBitmap)
     // XAML Image control only supports premultiplied Bgra8 format.
     SoftwareBitmap^ outputBitmap = ref new SoftwareBitmap(
         BitmapPixelFormat::Bgra8,
-        640,
-        480,
+        480 / 2,
+        640 / 2,
         BitmapAlphaMode::Premultiplied);
 
     BitmapBuffer^ input = inputBitmap->LockBuffer(BitmapBufferAccessMode::Read);
@@ -404,19 +416,28 @@ SoftwareBitmap^ FrameRenderer::TransformVlcBitmap(SoftwareBitmap^ inputBitmap)
     UINT32 outputCapacity;
     AsComPtr<IMemoryBufferByteAccess>(outputReference)->GetBuffer(&outputBytes, &outputCapacity);
 
-    for (int y = 0; y < 480; y++)
+    for (int y = 0; y < 480; y += 2)
     {
         byte* inputRowBytes = inputBytes + y * 640;
-        byte* outputRowBytes = outputBytes + y * outputStride;
-
         uint8_t* inputRow = reinterpret_cast<uint8_t*>(inputRowBytes);
-        ColorBGRA* outputRow = reinterpret_cast<ColorBGRA*>(outputRowBytes);
-        for (int x = 0; x < 640; x++)
+
+        for (int x = 0; x < 640; x += 2)
         {
-            outputRow[x].R = inputRow[x];
-            outputRow[x].G = inputRow[x];
-            outputRow[x].B = inputRow[x];
-            outputRow[x].A = 255;
+            const byte input =
+                static_cast<byte>(
+                    (static_cast<uint32_t>(inputRow[x]) +
+                     static_cast<uint32_t>(inputRow[x + 1]) +
+                     static_cast<uint32_t>(inputRow[x + 640]) +
+                     static_cast<uint32_t>(inputRow[x + 641])) >> 2);
+
+            byte* outputRowBytes = outputBytes + (x * outputStride >> 1);
+            ColorBGRA* outputRow = reinterpret_cast<ColorBGRA*>(outputRowBytes);
+            auto& output = outputRow[(480 / 2 - 1) - (y >> 1)];
+
+            output.B = input;
+            output.G = input;
+            output.R = input;
+            output.A = 255;
         }
     }
 
