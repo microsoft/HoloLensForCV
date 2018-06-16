@@ -53,6 +53,8 @@ namespace ArucoMarkerTracker
         HoloLensForCV::MediaFrameSourceGroup^ _holoLensMediaFrameSourceGroup;
         bool _holoLensMediaFrameSourceGroupStarted;
 
+        HoloLensForCV::MultiFrameBuffer^ _multiFrameBuffer;
+
         Windows::Foundation::DateTime _latestSelectedCameraTimestamp;
 
         cv::Mat _undistortMap1;

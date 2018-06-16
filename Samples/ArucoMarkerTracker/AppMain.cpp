@@ -24,6 +24,7 @@ namespace ArucoMarkerTracker
         , _undistortMapsInitialized(false)
         , _isActiveRenderer(false)
     {
+        _multiFrameBuffer = ref new HoloLensForCV::MultiFrameBuffer;
     }
 
     void AppMain::OnHolographicSpaceChanged(
@@ -314,7 +315,7 @@ namespace ArucoMarkerTracker
             ref new HoloLensForCV::MediaFrameSourceGroup(
                 _selectedHoloLensMediaFrameSourceGroupType,
                 _spatialPerception,
-                nullptr /* optionalSensorFrameSinkGroup */);
+                _multiFrameBuffer);
 
         for (const auto enabledSensorType : enabledSensorTypes)
         {
