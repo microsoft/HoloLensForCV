@@ -394,8 +394,8 @@ SoftwareBitmap^ FrameRenderer::TransformVlcBitmap(SoftwareBitmap^ inputBitmap)
     // XAML Image control only supports premultiplied Bgra8 format.
     SoftwareBitmap^ outputBitmap = ref new SoftwareBitmap(
         BitmapPixelFormat::Bgra8,
-        640,
-        480,
+        480 / 2,
+        640 / 2,
         BitmapAlphaMode::Premultiplied);
 
     BitmapBuffer^ input = inputBitmap->LockBuffer(BitmapBufferAccessMode::Read);
@@ -416,18 +416,23 @@ SoftwareBitmap^ FrameRenderer::TransformVlcBitmap(SoftwareBitmap^ inputBitmap)
     UINT32 outputCapacity;
     AsComPtr<IMemoryBufferByteAccess>(outputReference)->GetBuffer(&outputBytes, &outputCapacity);
 
-    for (int y = 0; y < 480; y++)
+    for (int y = 0; y < 480; y += 2)
     {
         byte* inputRowBytes = inputBytes + y * 640;
-        byte* outputRowBytes = outputBytes + y * outputStride;
-
         uint8_t* inputRow = reinterpret_cast<uint8_t*>(inputRowBytes);
-        ColorBGRA* outputRow = reinterpret_cast<ColorBGRA*>(outputRowBytes);
 
-        for (int x = 0; x < 640; x++)
+        for (int x = 0; x < 640; x += 2)
         {
-            const byte input = inputRow[x];
-            auto& output = outputRow[x];
+            const byte input =
+                static_cast<byte>(
+                    (static_cast<uint32_t>(inputRow[x]) +
+                     static_cast<uint32_t>(inputRow[x + 1]) +
+                     static_cast<uint32_t>(inputRow[x + 640]) +
+                     static_cast<uint32_t>(inputRow[x + 641])) >> 2);
+
+            byte* outputRowBytes = outputBytes + (x * outputStride >> 1);
+            ColorBGRA* outputRow = reinterpret_cast<ColorBGRA*>(outputRowBytes);
+            auto& output = outputRow[(480 / 2 - 1) - (y >> 1)];
 
             output.B = input;
             output.G = input;
