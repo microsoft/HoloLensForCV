@@ -14,6 +14,7 @@
 #include "targetver.h"
 
 #include <map>
+#include <cmath>
 #include <array>
 #include <mutex>
 #include <memory>

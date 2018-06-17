@@ -17,7 +17,8 @@ namespace Rendering
     {
     public:
         MarkerRenderer(
-            _In_ const Graphics::DeviceResourcesPtr& deviceResources);
+            const Graphics::DeviceResourcesPtr& deviceResources,
+            const float markerSize = 0.02f);
 
         void CreateDeviceDependentResources();
 
@@ -41,6 +42,8 @@ namespace Rendering
         }
 
     private:
+        const float _markerSize;
+
         // Cached pointer to device resources.
         Graphics::DeviceResourcesPtr _deviceResources;
 

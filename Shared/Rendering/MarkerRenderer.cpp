@@ -15,8 +15,10 @@ namespace Rendering
 {
     // Loads vertex and pixel shaders from files and instantiates the cube geometry.
     MarkerRenderer::MarkerRenderer(
-        const std::shared_ptr<Graphics::DeviceResources>& deviceResources)
-        : _deviceResources(deviceResources)
+        const std::shared_ptr<Graphics::DeviceResources>& deviceResources,
+        const float markerSize)
+        : _markerSize(markerSize)
+        , _deviceResources(deviceResources)
     {
         CreateDeviceDependentResources();
     }
@@ -24,12 +26,20 @@ namespace Rendering
     // Called once per frame. Rotates the cube, and calculates and sets the model matrix
     // relative to the position transform indicated by hologramPositionTransform.
     void MarkerRenderer::Update(
-        _In_ const Graphics::StepTimer& /* timer */)
+        _In_ const Graphics::StepTimer& timer)
     {
         // Position the marker.
         const auto modelTranslation =
             DirectX::XMMatrixTranslationFromVector(
                 DirectX::XMLoadFloat3(&_position));
+
+        const float rotationInRadians =
+            static_cast<float>(timer.GetTotalSeconds()) * DirectX::XM_PI;
+
+        const auto modelRotation =
+            DirectX::XMMatrixRotationX(rotationInRadians) *
+            DirectX::XMMatrixRotationY(rotationInRadians) *
+            DirectX::XMMatrixRotationZ(rotationInRadians);
 
         // The view and projection matrices are provided by the system; they are associated
         // with holographic cameras, and updated on a per-camera basis.
@@ -38,7 +48,7 @@ namespace Rendering
         XMStoreFloat4x4(
             &_modelConstantBufferData.model,
             DirectX::XMMatrixTranspose(
-                modelTranslation));
+                modelRotation * modelTranslation));
 
         // Loading is asynchronous. Resources must be created before they can be updated.
         if (!_loadingComplete)
@@ -149,9 +159,8 @@ namespace Rendering
         {
             // Load mesh vertices. Each vertex has a position and a color.
             // Note that the cube size has changed from the default DirectX app
-            // template. Windows Holographic is scaled in meters, so to draw the
-            // cube at a comfortable size we made the cube width 0.2 m (20 cm).
-            const float sx = 0.02f, sy = 0.02f, sz = 0.02f;
+            // template. Windows Holographic is scaled in meters.
+            const float sx = _markerSize, sy = _markerSize, sz = _markerSize;
             static const std::array<VertexPositionColorTexture, 8> cubeVertices =
             { {
                 { { -sx, -sy, -sz },{ 1.0f, 0.0f, 0.0f },{ 0.0f, 1.0f } },
