@@ -110,10 +110,25 @@ task<void> SensorStreamViewer::LoadMediaSourceWorkerAsync()
             return task_from_result();
         }
 
-        // Pick the first group.
-        // TODO: Select by name
-        m_selectedSourceGroupIndex = 0;
-        MediaFrameSourceGroup^ selectedGroup = allGroups->GetAt(m_selectedSourceGroupIndex);
+        MediaFrameSourceGroup^ selectedGroup;
+
+        for (uint32_t i = 0; i < allGroups->Size; ++i)
+        {
+            MediaFrameSourceGroup^ candidateGroup = allGroups->GetAt(i);
+
+            if (candidateGroup->DisplayName == "Sensor Streaming")
+            {
+                m_selectedSourceGroupIndex = i;
+                selectedGroup = candidateGroup;
+                break;
+            }
+        }
+
+        if (!selectedGroup)
+        {
+            m_logger->Log("No Sensor Streaming groups found.");
+            return task_from_result();
+        }
 
         m_logger->Log("Found " + allGroups->Size.ToString() + " groups and " +
             "selecting index [" + m_selectedSourceGroupIndex.ToString() + "] : " +
