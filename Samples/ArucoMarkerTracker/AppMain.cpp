@@ -15,6 +15,184 @@
 
 namespace ArucoMarkerTracker
 {
+    struct DetectedMarker
+    {
+        int32_t markerId;
+
+        Eigen::Vector3f point;
+        Eigen::Vector3f dir;
+
+        // Image position
+        int x;
+        int y;
+    };
+
+    std::map<int32_t, DetectedMarker> DetectArUcoMarkers(
+        HoloLensForCV::SensorFrame^ frame)
+    {
+        std::map<int32_t, DetectedMarker> detectedMarkers;
+
+        cv::Ptr<cv::aruco::DetectorParameters> arucoDetectorParameters =
+            cv::aruco::DetectorParameters::create();
+
+        cv::Ptr<cv::aruco::Dictionary> arucoDictionary =
+            cv::aruco::getPredefinedDictionary(
+                cv::aruco::DICT_6X6_1000);
+
+        std::vector<std::vector<cv::Point2f>> arucoMarkers, arucoRejectedCandidates;
+        std::vector<int32_t> arucoMarkerIds;
+
+        cv::Mat wrappedImage;
+
+        rmcv::WrapHoloLensVisibleLightCameraFrameWithCvMat(
+            frame,
+            wrappedImage);
+
+        cv::aruco::detectMarkers(
+            wrappedImage,
+            arucoDictionary,
+            arucoMarkers,
+            arucoMarkerIds,
+            arucoDetectorParameters,
+            arucoRejectedCandidates);
+ 
+        if (!arucoMarkerIds.empty())
+        {
+            Windows::Foundation::Numerics::float4x4 camToRef;
+
+            if (!Windows::Foundation::Numerics::invert(frame->CameraViewTransform, &camToRef))
+            {
+                return detectedMarkers;
+            }
+
+            Windows::Foundation::Numerics::float4x4 camToOrigin = camToRef * frame->FrameToOrigin;
+            Eigen::Vector3f camPinhole(camToOrigin.m41, camToOrigin.m42, camToOrigin.m43);
+
+            Eigen::Matrix3f camToOriginR;
+
+            camToOriginR(0, 0) = camToOrigin.m11;
+            camToOriginR(0, 1) = camToOrigin.m12;
+            camToOriginR(0, 2) = camToOrigin.m13;
+            camToOriginR(1, 0) = camToOrigin.m21;
+            camToOriginR(1, 1) = camToOrigin.m22;
+            camToOriginR(1, 2) = camToOrigin.m23;
+            camToOriginR(2, 0) = camToOrigin.m31;
+            camToOriginR(2, 1) = camToOrigin.m32;
+            camToOriginR(2, 2) = camToOrigin.m33;
+
+            for (size_t i = 0; i < arucoMarkerIds.size(); ++i)
+            {
+                const auto& markerCorners = arucoMarkers[i];
+
+                if (markerCorners.size() != 4)
+                {
+                    dbg::trace(
+                        L"DetectArUcoMarkers: skipping marker id %i with %i corners",
+                        arucoMarkerIds[i],
+                        markerCorners.size());
+
+                    continue;
+                }
+
+                for (size_t j = 0; j < markerCorners.size(); ++j)
+                {
+                    DetectedMarker detectedMarker;
+
+                    detectedMarker.markerId =
+                        arucoMarkerIds[i] * 4 + j;
+
+                    detectedMarker.x = static_cast<int>(markerCorners[j].x);
+                    detectedMarker.y = static_cast<int>(markerCorners[j].y);
+                    detectedMarker.point = camPinhole;
+
+                    Windows::Foundation::Point uv;
+
+                    uv.X = static_cast<float>(markerCorners[j].x);
+                    uv.Y = static_cast<float>(markerCorners[j].y);
+
+                    Windows::Foundation::Point xy;
+
+                    if (!frame->SensorStreamingCameraIntrinsics->MapImagePointToCameraUnitPlane(uv, &xy))
+                    {
+                        continue;
+                    }
+
+                    Eigen::Vector3f dirCam;
+
+                    dirCam[0] = xy.X;
+                    dirCam[1] = xy.Y;
+                    dirCam[2] = 1.0f;
+
+                    detectedMarker.dir =
+                        camToOriginR.transpose() * dirCam;
+
+                    detectedMarkers[detectedMarker.markerId] =
+                        detectedMarker;
+                }
+            }
+        }
+
+        return detectedMarkers;
+    }
+
+    struct TrackedMarker
+    {
+        int32_t markerId;
+        Eigen::Vector3f point;
+    };
+
+    std::map<int32_t, TrackedMarker> TrackArUcoMarkers(
+        HoloLensForCV::SensorFrame^ leftFrame,
+        HoloLensForCV::SensorFrame^ rightFrame)
+    {
+        std::map<int32_t, TrackedMarker> trackedMarkers;
+
+        Windows::Foundation::Numerics::float4x4 leftCamToRef;
+
+        if (!Windows::Foundation::Numerics::invert(leftFrame->CameraViewTransform, &leftCamToRef))
+        {
+            return trackedMarkers;
+        }
+
+        auto leftCamToOrigin = leftCamToRef * leftFrame->FrameToOrigin;
+
+        auto leftDetections = DetectArUcoMarkers(leftFrame);
+        auto rightDetections = DetectArUcoMarkers(rightFrame);
+
+        for (auto leftDetectionIterator : leftDetections)
+        {
+            auto leftDetection = leftDetectionIterator.second;
+
+            if (rightDetections.count(leftDetection.markerId))
+            {
+                auto rightDetection = rightDetections[leftDetection.markerId];
+
+                auto a = leftDetection.point;
+                auto b = leftDetection.dir;
+                auto c = rightDetection.point;
+                auto d = rightDetection.dir;
+
+                Eigen::Matrix<float, 3, 2> A;
+
+                A.col(0) = b;
+                A.col(1) = -d;
+
+                Eigen::Vector3f y = (c - a);
+
+                Eigen::Vector2f x = (A.transpose() * A).inverse() * (A.transpose() * y);
+
+                TrackedMarker triangulatedMarkerCorner;
+
+                triangulatedMarkerCorner.markerId = leftDetection.markerId;
+                triangulatedMarkerCorner.point = (a + b * x[0] + c + d * x[1]) * 0.5f;
+
+                trackedMarkers[triangulatedMarkerCorner.markerId] = triangulatedMarkerCorner;
+            }
+        }
+
+        return trackedMarkers;
+    }
+
     AppMain::AppMain(
         const std::shared_ptr<Graphics::DeviceResources>& deviceResources)
         : Holographic::AppMainBase(deviceResources)
@@ -65,35 +243,6 @@ namespace ArucoMarkerTracker
         }
     }
 
-    void InitializeCameraMatrixAndDistortionCoefficients(
-        _Out_ cv::Mat& camera_matrix_as_cv_mat,
-        _Out_ cv::Mat& distortion_coefficients_as_cv_mat)
-    {
-        camera_matrix_as_cv_mat.create(
-            3 /* _rows */,
-            3 /* _cols */,
-            CV_64FC1 /* _type */);
-
-        cv::setIdentity(
-            camera_matrix_as_cv_mat);
-
-        camera_matrix_as_cv_mat.at<double>(0, 0) = 460.3187770118759 /* FX */;
-        camera_matrix_as_cv_mat.at<double>(1, 1) = 492.7493611932309 /* FY */;
-        camera_matrix_as_cv_mat.at<double>(0, 2) = 326.3250047807984 /* PX */;
-        camera_matrix_as_cv_mat.at<double>(1, 2) = 282.7021871576021 /* PY */;
-
-        distortion_coefficients_as_cv_mat.create(
-            5 /* _rows */,
-            1 /* _cols */,
-            CV_64FC1 /* _type */);
-
-        distortion_coefficients_as_cv_mat.at<double>(0, 0) = -0.003425237781823855 /* K0 */;
-        distortion_coefficients_as_cv_mat.at<double>(1, 0) = 6.374549764809066e-05 /* K1 */;
-        distortion_coefficients_as_cv_mat.at<double>(2, 0) = -3.163886258401793 /* CX */;
-        distortion_coefficients_as_cv_mat.at<double>(3, 0) = -0.2860290570373986 /* CY */;
-        distortion_coefficients_as_cv_mat.at<double>(4, 0) = -2.04069093750431e-06 /* K2 */;
-    }
-
     void AppMain::OnUpdate(
         _In_ Windows::Graphics::Holographic::HolographicFrame^ holographicFrame,
         _In_ const Graphics::StepTimer& stepTimer)
@@ -126,6 +275,21 @@ namespace ArucoMarkerTracker
             return;
         }
 
+#if 0
+        OnUpdateFor2DDetection();
+#else
+        OnUpdateFor3DTracking();
+#endif
+
+        for (auto& markerRendererIterator : _markerRenderers)
+        {
+            markerRendererIterator.second->Update(
+                stepTimer);
+        }
+    }
+
+    void AppMain::OnUpdateFor2DDetection()
+    {
         HoloLensForCV::SensorFrame^ latestFrame;
 
         latestFrame =
@@ -177,44 +341,6 @@ namespace ArucoMarkerTracker
 
         if (!arucoMarkerIds.empty())
         {
-            std::vector<cv::Vec3d> rvecs, tvecs;
-
-            const float arucoMarkerLength =
-                29.0f / 1000.0f;
-
-            cv::Mat camera_matrix_as_cv_mat;
-            cv::Mat distortion_coefficients_as_cv_mat;
-
-            InitializeCameraMatrixAndDistortionCoefficients(
-                camera_matrix_as_cv_mat,
-                distortion_coefficients_as_cv_mat);
-
-            cv::aruco::estimatePoseSingleMarkers(
-                arucoMarkerCorners,
-                arucoMarkerLength,
-                camera_matrix_as_cv_mat,
-                distortion_coefficients_as_cv_mat,
-                rvecs,
-                tvecs);
-
-#if 0
-            for (auto& rvec : rvecs)
-            {
-                dbg::trace(L"rvec: %f %f %f", rvec[0], rvec[1], rvec[2]);
-            }
-
-            for (auto& tvec : tvecs)
-            {
-                dbg::trace(L"tvec: %f %f %f", tvec[0], tvec[1], tvec[2]);
-            }
-#endif
-
-            if (_markerRenderer && !tvecs.empty())
-            {
-                _markerRenderer->SetPosition(
-                    Windows::Foundation::Numerics::float3((float)tvecs[0][0], (float)tvecs[0][1], (float)tvecs[0][2]));
-            }
-
             cv::aruco::drawDetectedMarkers(
                 bgrImage,
                 arucoMarkerCorners,
@@ -232,15 +358,98 @@ namespace ArucoMarkerTracker
             _deviceResources,
             bgraImage,
             _currentVisualizationTexture);
+    }
 
-        if (!_markerRenderer)
+    void AppMain::OnUpdateFor3DTracking()
+    {
+        const float c_timestampTolerance = 0.001f;
+
+        auto commonTime = _multiFrameBuffer->GetTimestampForSensorPair(
+            HoloLensForCV::SensorType::VisibleLightLeftFront,
+            HoloLensForCV::SensorType::VisibleLightRightFront,
+            c_timestampTolerance);
+
+        HoloLensForCV::SensorFrame^ leftFrame = _multiFrameBuffer->GetFrameForTime(
+            HoloLensForCV::SensorType::VisibleLightLeftFront,
+            commonTime,
+            c_timestampTolerance);
+
+        HoloLensForCV::SensorFrame^ rightFrame = _multiFrameBuffer->GetFrameForTime(
+            HoloLensForCV::SensorType::VisibleLightRightFront,
+            commonTime,
+            c_timestampTolerance);
+
+        if (!leftFrame || !rightFrame)
         {
-            _markerRenderer = std::make_shared<Rendering::MarkerRenderer>(
-                _deviceResources);
+            dbg::trace(L"AppMain::OnUpdateFor3DTracking: ref of depth frame missing");
+            return;
         }
 
-        _markerRenderer->Update(
-            stepTimer);
+        auto timeDiff100ns = leftFrame->Timestamp.UniversalTime - rightFrame->Timestamp.UniversalTime;
+
+        if (std::abs(timeDiff100ns * 1e-7f) > 2e-3f)
+        {
+            dbg::trace(L"AppMain::OnUpdateFor3DTracking: times are differeny by %f seconds", std::abs(timeDiff100ns * 1e-7f));
+            return;
+        }
+
+        static long long s_previousTimestamp = 0;
+
+        if (leftFrame->Timestamp.UniversalTime == s_previousTimestamp)
+        {
+            dbg::trace(L"AppMain::OnUpdateFor3DTracking: timestamp did not change");
+            return;
+        }
+
+        s_previousTimestamp = leftFrame->Timestamp.UniversalTime;
+
+        auto trackedMarkers = TrackArUcoMarkers(
+            leftFrame,
+            rightFrame);
+
+        std::vector<int32_t> markerRenderersToErase;
+
+        for (auto& markerRendererIterator : _markerRenderers)
+        {
+            if (0 == trackedMarkers.count(markerRendererIterator.first))
+            {
+                markerRenderersToErase.emplace_back(
+                    markerRendererIterator.first);
+            }
+        }
+
+        for (auto& markerRendererToErase : markerRenderersToErase)
+        {
+            _markerRenderers.erase(
+                markerRendererToErase);
+        }
+
+        for (auto& triangulatedMarkerCornerIterator : trackedMarkers)
+        {
+            auto& triangulatedMarkerCorner =
+                triangulatedMarkerCornerIterator.second;
+
+            Windows::Foundation::Numerics::float3 p(
+                triangulatedMarkerCorner.point.x(),
+                triangulatedMarkerCorner.point.y(),
+                triangulatedMarkerCorner.point.z());
+
+            if (_markerRenderers.find(triangulatedMarkerCorner.markerId) == _markerRenderers.end())
+            {
+                dbg::trace(L"AppMain::OnUpdateFor3DTracking: adding marker renderer for marker id %i", triangulatedMarkerCorner.markerId);
+
+                _markerRenderers[triangulatedMarkerCorner.markerId] =
+                    std::make_shared<Rendering::MarkerRenderer>(
+                        _deviceResources,
+                        0.005f /* markerSize */);
+            }
+
+#if 0
+            dbg::trace(L"AppMain::OnUpdateFor3DTracking: moving marker id %i to [%f, %f, %f]", triangulatedMarkerCorner.markerId, p.x, p.y, p.z);
+#endif
+
+            _markerRenderers[triangulatedMarkerCorner.markerId]->SetPosition(p);
+        }
     }
 
     void AppMain::OnPreRender()
@@ -263,9 +472,9 @@ namespace ArucoMarkerTracker
             _currentSlateRenderer->Render(_currentVisualizationTexture);
         }
 
-        if (_markerRenderer)
+        for (auto& markerRendererIterator : _markerRenderers)
         {
-            _markerRenderer->Render();
+            markerRendererIterator.second->Render();
         }
     }
 
@@ -273,7 +482,6 @@ namespace ArucoMarkerTracker
     // need to be released before this method returns.
     void AppMain::OnDeviceLost()
     {
-
         for (auto& r : _slateRendererList)
         {
             r->ReleaseDeviceDependentResources();

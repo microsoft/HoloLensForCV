@@ -154,6 +154,7 @@
     <Import Project="$(VSINSTALLDIR)\Common7\IDE\Extensions\Microsoft\VsGraphics\ShaderGraphContentTask.targets" />
     <Import Project="$(SolutionDir)\packages\OpenCV.HoloLens.341.0.0\build\native\OpenCV.HoloLens.targets" Condition="Exists('$(SolutionDir)\packages\OpenCV.HoloLens.341.0.0\build\native\OpenCV.HoloLens.targets')" />
     <Import Project="..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets" Condition="Exists('..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets')" />
+    <Import Project="..\..\packages\Eigen.3.3.3\build\native\Eigen.targets" Condition="Exists('..\..\packages\Eigen.3.3.3\build\native\Eigen.targets')" />
   </ImportGroup>
   <PropertyGroup>
     <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
@@ -164,5 +165,6 @@
     </PropertyGroup>
     <Error Condition="!Exists('$(SolutionDir)\packages\OpenCV.HoloLens.341.0.0\build\native\OpenCV.HoloLens.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\packages\OpenCV.HoloLens.341.0.0\build\native\OpenCV.HoloLens.targets'))" />
     <Error Condition="!Exists('..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Eigen.3.3.3\build\native\Eigen.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Eigen.3.3.3\build\native\Eigen.targets'))" />
   </Target>
 </Project>

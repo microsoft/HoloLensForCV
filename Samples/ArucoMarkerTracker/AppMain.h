@@ -43,10 +43,14 @@ namespace ArucoMarkerTracker
         // Initializes access to HoloLens sensors.
         void StartHoloLensMediaFrameSourceGroup();
 
+        void OnUpdateFor2DDetection();
+
+        void OnUpdateFor3DTracking();
+
     private:
         std::vector<std::shared_ptr<Rendering::SlateRenderer> >_slateRendererList;
         std::shared_ptr<Rendering::SlateRenderer> _currentSlateRenderer;
-        std::shared_ptr<Rendering::MarkerRenderer> _markerRenderer;
+        std::map<int32_t, std::shared_ptr<Rendering::MarkerRenderer>> _markerRenderers;
 
         // Selected HoloLens media frame source group
         HoloLensForCV::MediaFrameSourceGroupType _selectedHoloLensMediaFrameSourceGroupType;

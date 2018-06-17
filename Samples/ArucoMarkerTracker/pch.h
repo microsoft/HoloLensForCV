@@ -19,6 +19,7 @@
 #include <DirectXColors.h>
 #include <dwrite_2.h>
 #include <map>
+#include <deque>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -36,6 +37,8 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/aruco.hpp>
+
+#include <Eigen/Eigen>
 
 #include <SimpleMath.h>
 #include <DirectXHelpers.h>
