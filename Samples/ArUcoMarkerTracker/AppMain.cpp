@@ -13,7 +13,7 @@
 
 #include "AppMain.h"
 
-namespace ArucoMarkerTracker
+namespace ArUcoMarkerTracker
 {
     struct DetectedMarker
     {

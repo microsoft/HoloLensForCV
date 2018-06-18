@@ -42,7 +42,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ArucoMarkerTracker", "Samples\ArucoMarkerTracker\ArucoMarkerTracker.vcxproj", "{8D84A8AE-BD70-4F78-B85A-230A033FB7EC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ArUcoMarkerTracker", "Samples\ArUcoMarkerTracker\ArUcoMarkerTracker.vcxproj", "{8D84A8AE-BD70-4F78-B85A-230A033FB7EC}"
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SensorStreamViewer", "Samples\SensorStreamViewer\SensorStreamViewer.vcxproj", "{E71542FD-E5F3-55BC-8EBB-4FFC708277CD}"
 EndProject
 Global

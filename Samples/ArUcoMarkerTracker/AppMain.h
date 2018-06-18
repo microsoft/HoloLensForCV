@@ -11,7 +11,7 @@
 
 #pragma once
 
-namespace ArucoMarkerTracker
+namespace ArUcoMarkerTracker
 {
     class AppMain : public Holographic::AppMainBase
     {

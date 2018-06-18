@@ -11,7 +11,7 @@
 
 #pragma once
 
-namespace ArucoMarkerTracker
+namespace ArUcoMarkerTracker
 {
     // IFrameworkView class. Connects the app with the Windows shell and handles application lifecycle events.
     ref class AppView sealed : public Holographic::AppViewBase

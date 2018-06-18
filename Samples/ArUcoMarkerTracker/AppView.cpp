@@ -20,8 +20,8 @@
 int main(
     Platform::Array<Platform::String^>^)
 {
-    ArucoMarkerTracker::AppViewSource^ appViewSource =
-        ref new ArucoMarkerTracker::AppViewSource();
+    ArUcoMarkerTracker::AppViewSource^ appViewSource =
+        ref new ArUcoMarkerTracker::AppViewSource();
 
     Windows::ApplicationModel::Core::CoreApplication::Run(
         appViewSource);
@@ -29,7 +29,7 @@ int main(
     return 0;
 }
 
-namespace ArucoMarkerTracker
+namespace ArUcoMarkerTracker
 {
     Windows::ApplicationModel::Core::IFrameworkView^ AppViewSource::CreateView()
     {

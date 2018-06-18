@@ -3,8 +3,8 @@
   <Import Project="$(SolutionDir)\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.props" Condition="Exists('$(SolutionDir)\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.props')" />
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8D84A8AE-BD70-4F78-B85A-230A033FB7EC}</ProjectGuid>
-    <Keyword>ArucoMarkerTracker</Keyword>
-    <RootNamespace>ArucoMarkerTracker</RootNamespace>
+    <Keyword>ArUcoMarkerTracker</Keyword>
+    <RootNamespace>ArUcoMarkerTracker</RootNamespace>
     <DefaultLanguage>en-US</DefaultLanguage>
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
@@ -60,7 +60,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <PackageCertificateKeyFile>ArucoMarkerTracker_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateKeyFile>ArUcoMarkerTracker_TemporaryKey.pfx</PackageCertificateKeyFile>
     <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -120,7 +120,7 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
-    <None Include="ArucoMarkerTracker_TemporaryKey.pfx" />
+    <None Include="ArUcoMarkerTracker_TemporaryKey.pfx" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>
