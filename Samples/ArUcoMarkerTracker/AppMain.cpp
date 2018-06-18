@@ -315,6 +315,9 @@ namespace ArUcoMarkerTracker
             {
                 std::lock_guard<std::mutex> guard(_markerRenderersMutex);
 
+                Windows::Foundation::Numerics::float3 focusPoint(0.0f, 0.0f, 0.0f);
+                int32_t numberOfMarkersDetected = 0;
+
                 for (auto& triangulatedMarkerCornerIterator : trackedMarkers)
                 {
                     auto& triangulatedMarkerCorner =
@@ -324,6 +327,11 @@ namespace ArUcoMarkerTracker
                         triangulatedMarkerCorner.point.x(),
                         triangulatedMarkerCorner.point.y(),
                         triangulatedMarkerCorner.point.z());
+
+                    if (std::isnan(p.x + p.y + p.z))
+                    {
+                        continue;
+                    }
 
                     if (_markerRenderers.find(triangulatedMarkerCorner.markerId) == _markerRenderers.end())
                     {
@@ -344,9 +352,15 @@ namespace ArUcoMarkerTracker
                     _markerRenderers[triangulatedMarkerCorner.markerId]->SetIsEnabled(true);
                     _markerRenderers[triangulatedMarkerCorner.markerId]->SetPosition(p);
 
+                    focusPoint += p;
+                    ++numberOfMarkersDetected;
+
                     _lastObservedMarkerTimestamp[triangulatedMarkerCorner.markerId] =
                         leftFrame->Timestamp.UniversalTime;
                 }
+
+                _optionalFocusPoint = focusPoint / static_cast<float>(numberOfMarkersDetected);
+                _hasFocusPoint = numberOfMarkersDetected > 0;
 
                 for (auto& markerRendererIterator : _markerRenderers)
                 {
