@@ -162,46 +162,6 @@ namespace Holographic
                 _timer);
         });
 
-        // We complete the frame update by using information about our content positioning
-        // to set the focus point.
-
-        for (auto cameraPose : prediction->CameraPoses)
-        {
-            //
-            // The HolographicCameraRenderingParameters class provides access to set
-            // the image stabilization parameters.
-            //
-            HolographicCameraRenderingParameters^ renderingParameters =
-                holographicFrame->GetRenderingParameters(
-                    cameraPose);
-
-            //
-            // SetFocusPoint informs the system about a specific point in your scene to
-            // prioritize for image stabilization. The focus point is set independently
-            // for each holographic camera.
-            // You should set the focus point near the content that the user is looking at.
-            // In this example, we put the focus point at the center of the sample hologram,
-            // since that is the only hologram available for the user to focus on.
-            // You can also set the relative velocity and facing of that content; the sample
-            // hologram is at a fixed point so we only need to indicate its position.
-            //
-            //TODO: a new API has been added in Windows 10 Creators Update that allows the OS
-            //  to analyze the z-buffer and pick the most likely stabilization plane. We will
-            //  add a call to this API once it becomes available for HoloLens, and consider
-            //  adding equivalent app-side code (see "HolographicDepthBasedImageStabilization"
-            //  under https://github.com/Microsoft/Windows-universal-samples/tree/master/Samples).
-            //
-#if 0
-            SpatialCoordinateSystem^ currentCoordinateSystem =
-                _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem;
-
-            renderingParameters->SetFocusPoint(
-                currentCoordinateSystem,
-                _slateRenderer->GetPosition()
-            );
-#endif
-        }
-
         // The holographic frame will be used to get up-to-date view and projection matrices and
         // to present the swap chain.
         return holographicFrame;
@@ -307,10 +267,68 @@ namespace Holographic
                     pCameraResources->AttachViewProjectionBuffer(
                         _deviceResources);
 
+                //
                 // Only render world-locked content when positional tracking is active.
+                //
                 if (cameraActive)
                 {
                     OnRender();
+                }
+
+                //
+                // Unbind the render target and depth-stencil views from the pipeline
+                //
+                {
+                    ID3D11RenderTargetView* nullViews[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = { nullptr };
+                    context->OMSetRenderTargets(ARRAYSIZE(nullViews), nullViews, nullptr);
+                }
+
+                //
+                // When positional tracking is active, 
+                //
+                if (cameraActive)
+                {
+                    auto spRenderingParameters = holographicFrame->GetRenderingParameters(
+                        cameraPose);
+              
+                    if (_hasFocusPoint)
+                    {
+                        //
+                        // SetFocusPoint informs the system about a specific point in your scene to
+                        // prioritize for image stabilization. The focus point is set independently
+                        // for each holographic camera.
+                        // You should set the focus point near the content that the user is looking at.
+                        // In this example, we put the focus point at the center of the sample hologram,
+                        // since that is the only hologram available for the user to focus on.
+                        // You can also set the relative velocity and facing of that content; the sample
+                        // hologram is at a fixed point so we only need to indicate its position.
+                        //
+                        spRenderingParameters->SetFocusPoint(
+                            _spatialPerception->GetOriginFrameOfReference()->CoordinateSystem,
+                            _optionalFocusPoint);
+                    }
+#if 0
+                    else
+                    {
+                        //
+                        // Make use of the depth buffer to optimize image stabilization.
+                        //
+                        Microsoft::WRL::ComPtr<ID3D11Texture2D> depthStencil(
+                            pCameraResources->GetDepthStencil());
+
+                        Microsoft::WRL::ComPtr<IDXGIResource1> depthStencilResource;
+                        ASSERT_SUCCEEDED(depthStencil.As(&depthStencilResource));
+
+                        Microsoft::WRL::ComPtr<IDXGISurface2> depthDxgiSurface;
+                        ASSERT_SUCCEEDED(depthStencilResource->CreateSubresourceSurface(0, &depthDxgiSurface));
+
+                        auto d3dSurface = Windows::Graphics::DirectX::Direct3D11::CreateDirect3DSurface(
+                            depthDxgiSurface.Get());
+
+                        spRenderingParameters->CommitDirect3D11DepthBuffer(
+                            d3dSurface);
+                    }
+#endif
                 }
 
                 atLeastOneCameraRendered = true;
