@@ -51,7 +51,7 @@ namespace Rendering
                 modelRotation * modelTranslation));
 
         // Loading is asynchronous. Resources must be created before they can be updated.
-        if (!_loadingComplete)
+        if (!_loadingComplete || !_isEnabled)
         {
             return;
         }
@@ -78,7 +78,7 @@ namespace Rendering
     void MarkerRenderer::Render()
     {
         // Loading is asynchronous. Resources must be created before drawing can occur.
-        if (!_loadingComplete)
+        if (!_loadingComplete || !_isEnabled)
         {
             return;
         }

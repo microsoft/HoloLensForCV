@@ -36,6 +36,12 @@ namespace Rendering
             _position = pos;
         }
 
+        void SetIsEnabled(
+            bool isEnabled)
+        {
+            _isEnabled = isEnabled;
+        }
+
         Windows::Foundation::Numerics::float3 GetPosition()
         {
             return _position;
@@ -60,8 +66,9 @@ namespace Rendering
         uint32 _indexCount = 0;
 
         // Variables used with the rendering loop.
-        bool _loadingComplete = false;
+        bool _loadingComplete{ false };
 
-        Windows::Foundation::Numerics::float3 _position = { 0.f, 0.f, 0.f };
+        Windows::Foundation::Numerics::float3 _position{ 0.f, 0.f, 0.f };
+        bool _isEnabled{ true };
     };
 }
