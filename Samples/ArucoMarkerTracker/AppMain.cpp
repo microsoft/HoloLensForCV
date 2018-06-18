@@ -281,10 +281,14 @@ namespace ArucoMarkerTracker
         OnUpdateFor3DTracking();
 #endif
 
-        for (auto& markerRendererIterator : _markerRenderers)
         {
-            markerRendererIterator.second->Update(
-                stepTimer);
+            std::lock_guard<std::mutex> guard(_markerRenderersMutex);
+
+            for (auto& markerRendererIterator : _markerRenderers)
+            {
+                markerRendererIterator.second->Update(
+                    stepTimer);
+            }
         }
     }
 
@@ -381,7 +385,10 @@ namespace ArucoMarkerTracker
 
         if (!leftFrame || !rightFrame)
         {
+#if 0
             dbg::trace(L"AppMain::OnUpdateFor3DTracking: ref of depth frame missing");
+#endif
+
             return;
         }
 
@@ -389,7 +396,10 @@ namespace ArucoMarkerTracker
 
         if (std::abs(timeDiff100ns * 1e-7f) > 2e-3f)
         {
+#if 0
             dbg::trace(L"AppMain::OnUpdateFor3DTracking: times are differeny by %f seconds", std::abs(timeDiff100ns * 1e-7f));
+#endif
+
             return;
         }
 
@@ -397,59 +407,82 @@ namespace ArucoMarkerTracker
 
         if (leftFrame->Timestamp.UniversalTime == s_previousTimestamp)
         {
+#if 0
             dbg::trace(L"AppMain::OnUpdateFor3DTracking: timestamp did not change");
+#endif
+
+            return;
+        }
+
+        if (InterlockedIncrement(&_markerUpdatesInProgress) > 1)
+        {
+            InterlockedDecrement(&_markerUpdatesInProgress);
+
             return;
         }
 
         s_previousTimestamp = leftFrame->Timestamp.UniversalTime;
 
-        auto trackedMarkers = TrackArUcoMarkers(
-            leftFrame,
-            rightFrame);
-
-        std::vector<int32_t> markerRenderersToErase;
-
-        for (auto& markerRendererIterator : _markerRenderers)
+        concurrency::create_task([this, leftFrame, rightFrame]()
         {
-            if (0 == trackedMarkers.count(markerRendererIterator.first))
+            auto trackedMarkers = TrackArUcoMarkers(
+                leftFrame,
+                rightFrame);
+
             {
-                markerRenderersToErase.emplace_back(
-                    markerRendererIterator.first);
-            }
-        }
+                std::lock_guard<std::mutex> guard(_markerRenderersMutex);
 
-        for (auto& markerRendererToErase : markerRenderersToErase)
-        {
-            _markerRenderers.erase(
-                markerRendererToErase);
-        }
+                for (auto& triangulatedMarkerCornerIterator : trackedMarkers)
+                {
+                    auto& triangulatedMarkerCorner =
+                        triangulatedMarkerCornerIterator.second;
 
-        for (auto& triangulatedMarkerCornerIterator : trackedMarkers)
-        {
-            auto& triangulatedMarkerCorner =
-                triangulatedMarkerCornerIterator.second;
+                    Windows::Foundation::Numerics::float3 p(
+                        triangulatedMarkerCorner.point.x(),
+                        triangulatedMarkerCorner.point.y(),
+                        triangulatedMarkerCorner.point.z());
 
-            Windows::Foundation::Numerics::float3 p(
-                triangulatedMarkerCorner.point.x(),
-                triangulatedMarkerCorner.point.y(),
-                triangulatedMarkerCorner.point.z());
-
-            if (_markerRenderers.find(triangulatedMarkerCorner.markerId) == _markerRenderers.end())
-            {
-                dbg::trace(L"AppMain::OnUpdateFor3DTracking: adding marker renderer for marker id %i", triangulatedMarkerCorner.markerId);
-
-                _markerRenderers[triangulatedMarkerCorner.markerId] =
-                    std::make_shared<Rendering::MarkerRenderer>(
-                        _deviceResources,
-                        0.005f /* markerSize */);
-            }
-
+                    if (_markerRenderers.find(triangulatedMarkerCorner.markerId) == _markerRenderers.end())
+                    {
 #if 0
-            dbg::trace(L"AppMain::OnUpdateFor3DTracking: moving marker id %i to [%f, %f, %f]", triangulatedMarkerCorner.markerId, p.x, p.y, p.z);
+                        dbg::trace(L"AppMain::OnUpdateFor3DTracking: adding marker renderer for marker id %i", triangulatedMarkerCorner.markerId);
 #endif
 
-            _markerRenderers[triangulatedMarkerCorner.markerId]->SetPosition(p);
-        }
+                        _markerRenderers[triangulatedMarkerCorner.markerId] =
+                            std::make_shared<Rendering::MarkerRenderer>(
+                                _deviceResources,
+                                0.0035f /* markerSize */);
+                    }
+
+#if 0
+                    dbg::trace(L"AppMain::OnUpdateFor3DTracking: moving marker id %i to [%f, %f, %f]", triangulatedMarkerCorner.markerId, p.x, p.y, p.z);
+#endif
+
+                    _markerRenderers[triangulatedMarkerCorner.markerId]->SetIsEnabled(true);
+                    _markerRenderers[triangulatedMarkerCorner.markerId]->SetPosition(p);
+
+                    _lastObservedMarkerTimestamp[triangulatedMarkerCorner.markerId] =
+                        leftFrame->Timestamp.UniversalTime;
+                }
+
+                for (auto& markerRendererIterator : _markerRenderers)
+                {
+                    const long long timeSinceLastObservation =
+                        leftFrame->Timestamp.UniversalTime -
+                        _lastObservedMarkerTimestamp[markerRendererIterator.first];
+
+                    const float timeSinceLastObservationInSeconds =
+                        static_cast<float>(timeSinceLastObservation) * 1e-7f;
+
+                    if (timeSinceLastObservationInSeconds > 3.0f)
+                    {
+                        markerRendererIterator.second->SetIsEnabled(false);
+                    }
+                }
+            }
+
+            InterlockedDecrement(&_markerUpdatesInProgress);
+        });
     }
 
     void AppMain::OnPreRender()
@@ -472,9 +505,13 @@ namespace ArucoMarkerTracker
             _currentSlateRenderer->Render(_currentVisualizationTexture);
         }
 
-        for (auto& markerRendererIterator : _markerRenderers)
         {
-            markerRendererIterator.second->Render();
+            std::lock_guard<std::mutex> guard(_markerRenderersMutex);
+
+            for (auto& markerRendererIterator : _markerRenderers)
+            {
+                markerRendererIterator.second->Render();
+            }
         }
     }
 

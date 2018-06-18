@@ -50,7 +50,11 @@ namespace ArucoMarkerTracker
     private:
         std::vector<std::shared_ptr<Rendering::SlateRenderer> >_slateRendererList;
         std::shared_ptr<Rendering::SlateRenderer> _currentSlateRenderer;
+
         std::map<int32_t, std::shared_ptr<Rendering::MarkerRenderer>> _markerRenderers;
+        std::map<int32_t, long long> _lastObservedMarkerTimestamp;
+        std::mutex _markerRenderersMutex;
+        volatile long _markerUpdatesInProgress{ 0 };
 
         // Selected HoloLens media frame source group
         HoloLensForCV::MediaFrameSourceGroupType _selectedHoloLensMediaFrameSourceGroupType;
