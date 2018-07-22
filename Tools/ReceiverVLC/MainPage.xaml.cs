@@ -19,6 +19,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI;
@@ -33,7 +34,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Windows.Graphics.Imaging;
 
-namespace Receiver
+namespace ReceiverVLC
 {
     public sealed class CameraImageContext
     {
@@ -60,46 +61,65 @@ namespace Receiver
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private CameraImageContext _pvCameraImageContext;
-        
+        private CameraImageContext _vlcLeftLeftContext;
+        private CameraImageContext _vlcLeftFrontContext;
+        private CameraImageContext _vlcRightFrontContext;
+        private CameraImageContext _vlcRightRightContext;
+
         public MainPage()
         {
             this.InitializeComponent();
 
-            _pvCameraImageContext = new CameraImageContext(BitmapPixelFormat.Bgra8, 1280, 720, false /* needsConversion */);
+            _vlcLeftLeftContext = new CameraImageContext(BitmapPixelFormat.Gray8, 640, 480, true /* needsConversion */);
+            _vlcLeftFrontContext = new CameraImageContext(BitmapPixelFormat.Gray8, 640, 480, true /* needsConversion */);
+            _vlcRightFrontContext = new CameraImageContext(BitmapPixelFormat.Gray8, 640, 480, true /* needsConversion */);
+            _vlcRightRightContext = new CameraImageContext(BitmapPixelFormat.Gray8, 640, 480, true /* needsConversion */);
 
             UpdateImages();
         }
 
+        private void UpdateImage(CameraImageContext context, Image image)
+        {
+            if (!context.ImageSourceNeedsUpdate)
+            {
+                return;
+            }
+
+            var setImageTask = image.Dispatcher.RunAsync(
+                CoreDispatcherPriority.Normal,
+                async () =>
+                {
+                    if (context.ImageDataUpdateInProgress)
+                    {
+                        return;
+                    }
+
+                    context.ImageDataUpdateInProgress = true;
+
+                    context.ConvertedImage = SoftwareBitmap.Convert(
+                        context.RawImage,
+                        BitmapPixelFormat.Bgra8,
+                        BitmapAlphaMode.Premultiplied);
+
+                    context.ImageSourceNeedsUpdate = false;
+
+                    var imageSource = new SoftwareBitmapSource();
+
+                    await imageSource.SetBitmapAsync(
+                        context.ConvertedImage);
+
+                    image.Source = imageSource;
+
+                    context.ImageDataUpdateInProgress = false;
+                });
+        }
+
         private void UpdateImages()
         {
-            if (_pvCameraImageContext.ImageSourceNeedsUpdate)
-            {
-                var setPvImageTask = this._pvImage.Dispatcher.RunAsync(
-                    CoreDispatcherPriority.Normal,
-                    async () =>
-                    {
-                        if (_pvCameraImageContext.ImageDataUpdateInProgress)
-                        {
-                            return;
-                        }
-
-                        _pvCameraImageContext.ImageDataUpdateInProgress = true;
-
-                        _pvCameraImageContext.ConvertedImage = _pvCameraImageContext.RawImage;
-
-                        _pvCameraImageContext.ImageSourceNeedsUpdate = false;
-
-                        var imageSource = new SoftwareBitmapSource();
-
-                        await imageSource.SetBitmapAsync(
-                            _pvCameraImageContext.ConvertedImage);
-
-                        this._pvImage.Source = imageSource;
-
-                        _pvCameraImageContext.ImageDataUpdateInProgress = false;
-                    });
-            }
+            UpdateImage(_vlcLeftLeftContext, _vlcLeftLeftImage);
+            UpdateImage(_vlcLeftFrontContext, _vlcLeftFrontImage);
+            UpdateImage(_vlcRightFrontContext, _vlcRightFrontImage);
+            UpdateImage(_vlcRightRightContext, _vlcRightRightImage);
         }
 
         /// <summary>
@@ -124,14 +144,29 @@ namespace Receiver
                 return;
             }
 
-            var pvCameraSocket = new Windows.Networking.Sockets.StreamSocket();
-            pvCameraSocket.Control.KeepAlive = true;
+            string[] serviceNames =
+            {
+                _vlcLeftLeftServiceName.Text,
+                _vlcLeftFrontServiceName.Text,
+                _vlcRightFrontServiceName.Text,
+                _vlcRightRightServiceName.Text,
+            };
 
             // Save the socket, so subsequent steps can use it.
             try
             {
-                // Connect to the server (by default, the listener we created in the previous step).
-                await pvCameraSocket.ConnectAsync(hostName, _pvServiceName.Text);
+                foreach (var serviceName in serviceNames)
+                {
+                    Task.Run(async () =>
+                    {
+                        var socket = new Windows.Networking.Sockets.StreamSocket();
+                        socket.Control.KeepAlive = true;
+
+                        await socket.ConnectAsync(hostName, serviceName);
+
+                        OnServerConnectionEstablished(socket);
+                    });
+                }                
             }
             catch (Exception exception)
             {
@@ -142,9 +177,6 @@ namespace Receiver
                     throw;
                 }
             }
-
-            OnServerConnectionEstablished(
-                pvCameraSocket);
         }
 
         private async void OnServerConnectionEstablished(
@@ -173,14 +205,35 @@ namespace Receiver
                         sensorFrame.FrameType,
                         sensorFrame.Timestamp);
 #endif
-                    
+
                     switch (sensorFrame.FrameType)
                     {
-                        case HoloLensForCV.SensorType.PhotoVideo:
-                            _pvCameraImageContext.RawImage =
+                        case HoloLensForCV.SensorType.VisibleLightLeftLeft:
+                            _vlcLeftLeftContext.RawImage =
                                 sensorFrame.SoftwareBitmap;
 
-                            _pvCameraImageContext.ImageSourceNeedsUpdate = true;
+                            _vlcLeftLeftContext.ImageSourceNeedsUpdate = true;
+                            break;
+
+                        case HoloLensForCV.SensorType.VisibleLightLeftFront:
+                            _vlcLeftFrontContext.RawImage =
+                                sensorFrame.SoftwareBitmap;
+
+                            _vlcLeftFrontContext.ImageSourceNeedsUpdate = true;
+                            break;
+
+                        case HoloLensForCV.SensorType.VisibleLightRightFront:
+                            _vlcRightFrontContext.RawImage =
+                                sensorFrame.SoftwareBitmap;
+
+                            _vlcRightFrontContext.ImageSourceNeedsUpdate = true;
+                            break;
+
+                        case HoloLensForCV.SensorType.VisibleLightRightRight:
+                            _vlcRightRightContext.RawImage =
+                                sensorFrame.SoftwareBitmap;
+
+                            _vlcRightRightContext.ImageSourceNeedsUpdate = true;
                             break;
 
                         default:

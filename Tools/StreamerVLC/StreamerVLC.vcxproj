@@ -3,8 +3,8 @@
   <Import Project="$(SolutionDir)\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.props" Condition="Exists('$(SolutionDir)\packages\directxtk_uwp.2018.4.23.1\build\native\directxtk_uwp.props')" />
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DB17360F-8412-418A-8919-250441BCC43F}</ProjectGuid>
-    <Keyword>Streamer</Keyword>
-    <RootNamespace>Streamer</RootNamespace>
+    <Keyword>StreamerVLC</Keyword>
+    <RootNamespace>StreamerVLC</RootNamespace>
     <DefaultLanguage>en-US</DefaultLanguage>
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
@@ -60,7 +60,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <PackageCertificateKeyFile>Streamer_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateKeyFile>StreamerVLC_TemporaryKey.pfx</PackageCertificateKeyFile>
     <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -122,7 +122,7 @@
     </AppxManifest>
     <None Include="packages.config" />
     <None Include="README.md" />
-    <None Include="Streamer_TemporaryKey.pfx" />
+    <None Include="StreamerVLC_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(SolutionDir)\Shared\Debugging\Debugging.vcxproj">

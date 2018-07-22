@@ -20,8 +20,8 @@
 int main(
     Platform::Array<Platform::String^>^)
 {
-    Streamer::AppViewSource^ appViewSource =
-        ref new Streamer::AppViewSource();
+    StreamerVLC::AppViewSource^ appViewSource =
+        ref new StreamerVLC::AppViewSource();
 
     Windows::ApplicationModel::Core::CoreApplication::Run(
         appViewSource);
@@ -29,7 +29,7 @@ int main(
     return 0;
 }
 
-namespace Streamer
+namespace StreamerVLC
 {
     Windows::ApplicationModel::Core::IFrameworkView^ AppViewSource::CreateView()
     {
