@@ -1,0 +1,55 @@
+﻿<!--
+//*********************************************************
+//
+// Copyright (c) Microsoft. All rights reserved.
+// This code is licensed under the MIT License (MIT).
+// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
+// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
+// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
+// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
+//
+//*********************************************************
+-->
+<Page
+    x:Class="ReceiverVLC.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ReceiverVLC"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <StackPanel Orientation="Vertical">
+            <StackPanel>
+                <TextBlock TextWrapping="Wrap">Host name:</TextBlock>
+                <TextBox x:Name="HostNameForConnect" IsEnabled="true" Text="127.0.0.1"/>
+                <Button x:Name="ConnectSocket" Content="Connect" Click="ConnectSocket_Click"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" BorderThickness="2" BorderBrush="Black">
+                <StackPanel BorderThickness="2" VerticalAlignment="Bottom" BorderBrush="Black" HorizontalAlignment="Center">
+                    <Image Name="_vlcLeftLeftImage" Width="640" Height="480"/>
+                    <TextBlock TextWrapping="Wrap">Left-left visible light camera service name:</TextBlock>
+                    <TextBox x:Name="_vlcLeftLeftServiceName" Text="23943"/>
+                </StackPanel>
+                <StackPanel BorderThickness="2" VerticalAlignment="Bottom" BorderBrush="Black" HorizontalAlignment="Center">
+                    <Image Name="_vlcLeftFrontImage" Width="640" Height="480"/>
+                    <TextBlock TextWrapping="Wrap">Left-front visible light camera service name:</TextBlock>
+                    <TextBox x:Name="_vlcLeftFrontServiceName" Text="23944"/>
+                </StackPanel>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" BorderThickness="2" BorderBrush="Black">
+                <StackPanel BorderThickness="2" VerticalAlignment="Bottom" BorderBrush="Black" HorizontalAlignment="Center">
+                    <Image Name="_vlcRightFrontImage" Width="640" Height="480"/>
+                    <TextBlock TextWrapping="Wrap">Right-front visible light camera service name:</TextBlock>
+                    <TextBox x:Name="_vlcRightFrontServiceName" Text="23945"/>
+                </StackPanel>
+                <StackPanel BorderThickness="2" VerticalAlignment="Bottom" BorderBrush="Black" HorizontalAlignment="Center">
+                    <Image Name="_vlcRightRightImage" Width="640" Height="480"/>
+                    <TextBlock TextWrapping="Wrap">Right-right visible light camera service name:</TextBlock>
+                    <TextBox x:Name="_vlcRightRightServiceName" Text="23946"/>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Page>

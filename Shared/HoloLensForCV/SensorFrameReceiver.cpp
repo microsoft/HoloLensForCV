@@ -122,11 +122,30 @@ namespace HoloLensForCV
                     static_cast<uint32_t>(frameBytesLoaded));
 
             Windows::Graphics::Imaging::BitmapPixelFormat pixelFormat;
+            uint32_t packedImageWidthMultiplier = 1;
 
             switch (header->FrameType)
             {
             case SensorType::PhotoVideo:
                 pixelFormat = Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8;
+                break;
+
+            case SensorType::ShortThrowToFDepth:
+            case SensorType::LongThrowToFDepth:
+                pixelFormat = Windows::Graphics::Imaging::BitmapPixelFormat::Gray16;
+                break;
+
+            case SensorType::ShortThrowToFReflectivity:
+            case SensorType::LongThrowToFReflectivity:
+                pixelFormat = Windows::Graphics::Imaging::BitmapPixelFormat::Gray8;
+                break;
+
+            case SensorType::VisibleLightLeftLeft:
+            case SensorType::VisibleLightLeftFront:
+            case SensorType::VisibleLightRightFront:
+            case SensorType::VisibleLightRightRight:
+                pixelFormat = Windows::Graphics::Imaging::BitmapPixelFormat::Gray8;
+                packedImageWidthMultiplier = 4;
                 break;
 
             default:
@@ -143,7 +162,7 @@ namespace HoloLensForCV
                 Windows::Graphics::Imaging::SoftwareBitmap::CreateCopyFromBuffer(
                     frameAsBuffer,
                     pixelFormat,
-                    header->ImageWidth,
+                    header->ImageWidth * packedImageWidthMultiplier,
                     header->ImageHeight,
                     Windows::Graphics::Imaging::BitmapAlphaMode::Ignore);
 

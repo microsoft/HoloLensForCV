@@ -11,7 +11,7 @@
 
 #pragma once
 
-namespace Streamer
+namespace StreamerPV
 {
     class AppMain : public Holographic::AppMainBase
     {

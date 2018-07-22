@@ -33,7 +33,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Windows.Graphics.Imaging;
 
-namespace Receiver
+namespace ReceiverVLC
 {
     public sealed class CameraImageContext
     {
@@ -60,44 +60,50 @@ namespace Receiver
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private CameraImageContext _pvCameraImageContext;
-        
+        private CameraImageContext _vlcLeftLeftContext;
+        private CameraImageContext _vlcLeftFrontContext;
+        private CameraImageContext _vlcRightFrontContext;
+        private CameraImageContext _vlcRightRightContext;
+
         public MainPage()
         {
             this.InitializeComponent();
 
-            _pvCameraImageContext = new CameraImageContext(BitmapPixelFormat.Bgra8, 1280, 720, false /* needsConversion */);
+            _vlcLeftLeftContext = new CameraImageContext(BitmapPixelFormat.Gray8, 640, 480, true /* needsConversion */);
 
             UpdateImages();
         }
 
         private void UpdateImages()
         {
-            if (_pvCameraImageContext.ImageSourceNeedsUpdate)
+            if (_vlcLeftLeftContext.ImageSourceNeedsUpdate)
             {
-                var setPvImageTask = this._pvImage.Dispatcher.RunAsync(
+                var setImageTask = this._vlcLeftLeftImage.Dispatcher.RunAsync(
                     CoreDispatcherPriority.Normal,
                     async () =>
                     {
-                        if (_pvCameraImageContext.ImageDataUpdateInProgress)
+                        if (_vlcLeftLeftContext.ImageDataUpdateInProgress)
                         {
                             return;
                         }
 
-                        _pvCameraImageContext.ImageDataUpdateInProgress = true;
+                        _vlcLeftLeftContext.ImageDataUpdateInProgress = true;
 
-                        _pvCameraImageContext.ConvertedImage = _pvCameraImageContext.RawImage;
+                        _vlcLeftLeftContext.ConvertedImage = SoftwareBitmap.Convert(
+                            _vlcLeftLeftContext.RawImage,
+                            BitmapPixelFormat.Bgra8,
+                            BitmapAlphaMode.Premultiplied);
 
-                        _pvCameraImageContext.ImageSourceNeedsUpdate = false;
+                        _vlcLeftLeftContext.ImageSourceNeedsUpdate = false;
 
                         var imageSource = new SoftwareBitmapSource();
 
                         await imageSource.SetBitmapAsync(
-                            _pvCameraImageContext.ConvertedImage);
+                            _vlcLeftLeftContext.ConvertedImage);
 
-                        this._pvImage.Source = imageSource;
+                        this._vlcLeftLeftImage.Source = imageSource;
 
-                        _pvCameraImageContext.ImageDataUpdateInProgress = false;
+                        _vlcLeftLeftContext.ImageDataUpdateInProgress = false;
                     });
             }
         }
@@ -131,7 +137,7 @@ namespace Receiver
             try
             {
                 // Connect to the server (by default, the listener we created in the previous step).
-                await pvCameraSocket.ConnectAsync(hostName, _pvServiceName.Text);
+                await pvCameraSocket.ConnectAsync(hostName, _vlcLeftLeftServiceName.Text);
             }
             catch (Exception exception)
             {
@@ -173,14 +179,14 @@ namespace Receiver
                         sensorFrame.FrameType,
                         sensorFrame.Timestamp);
 #endif
-                    
+
                     switch (sensorFrame.FrameType)
                     {
-                        case HoloLensForCV.SensorType.PhotoVideo:
-                            _pvCameraImageContext.RawImage =
+                        case HoloLensForCV.SensorType.VisibleLightLeftLeft:
+                            _vlcLeftLeftContext.RawImage =
                                 sensorFrame.SoftwareBitmap;
 
-                            _pvCameraImageContext.ImageSourceNeedsUpdate = true;
+                            _vlcLeftLeftContext.ImageSourceNeedsUpdate = true;
                             break;
 
                         default:

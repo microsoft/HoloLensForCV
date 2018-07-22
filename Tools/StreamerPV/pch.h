@@ -35,8 +35,6 @@
 #include <SimpleMath.h>
 #include <DirectXHelpers.h>
 
-#define ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS 1
-
 #include <Debugging/All.h>
 #include <Io/All.h>
 #include <Graphics/All.h>

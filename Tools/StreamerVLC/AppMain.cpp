@@ -23,18 +23,13 @@ using namespace Windows::Perception::Spatial;
 using namespace Windows::UI::Input::Spatial;
 using namespace std::placeholders;
 
-namespace Streamer
+namespace StreamerVLC
 {
     // Loads and initializes application assets when the application is loaded.
     AppMain::AppMain(const std::shared_ptr<Graphics::DeviceResources>& deviceResources)
         : Holographic::AppMainBase(deviceResources)
-#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
         , _selectedHoloLensMediaFrameSourceGroupType(
             HoloLensForCV::MediaFrameSourceGroupType::HoloLensResearchModeSensors)
-#else
-        , _selectedHoloLensMediaFrameSourceGroupType(
-            HoloLensForCV::MediaFrameSourceGroupType::PhotoVideoCamera)
-#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
         , _holoLensMediaFrameSourceGroupStarted(false)
     {
     }
@@ -76,9 +71,7 @@ namespace Streamer
             L"AppMain::OnUpdate",
             30.0 /* minimum_time_elapsed_in_milliseconds */);
 
-#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
 		HoloLensForCV::SensorType renderSensorType = HoloLensForCV::SensorType::VisibleLightLeftFront;
-#endif
 
         //
         // Update scene objects.
@@ -100,25 +93,6 @@ namespace Streamer
         DXGI_FORMAT cameraPreviewTextureFormat;
         int32_t cameraPreviewPixelStride;
 
-#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
-        if (HoloLensForCV::MediaFrameSourceGroupType::PhotoVideoCamera == _selectedHoloLensMediaFrameSourceGroupType)
-#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
-        {
-            latestCameraPreviewFrame =
-                _holoLensMediaFrameSourceGroup->GetLatestSensorFrame(
-                    HoloLensForCV::SensorType::PhotoVideo);
-
-            cameraPreviewExpectedBitmapPixelFormat =
-                Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8;
-
-            cameraPreviewTextureFormat =
-                DXGI_FORMAT_B8G8R8A8_UNORM;
-
-            cameraPreviewPixelStride =
-                4;
-        }
-#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
-		else
 		{
 			latestCameraPreviewFrame =
 				_holoLensMediaFrameSourceGroup->GetLatestSensorFrame(
@@ -150,8 +124,6 @@ namespace Streamer
 					4;
 			}
 		}
-
-#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
 
         if (nullptr == latestCameraPreviewFrame)
         {
@@ -291,25 +263,20 @@ namespace Streamer
         //
         // Enabling all of the Research Mode sensors at the same time can be quite expensive
         // performance-wise. It's best to scope down the list of enabled sensors to just those
-        // that are required for a given task. In this example, we will select short-throw ToF
-        // depth and reflectivity, and the front pair of the visible light sensors.
+        // that are required for a given task. In this example, we will select the visible
+        // light cameras.
         //
-#if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
         enabledSensorTypes.emplace_back(
-            HoloLensForCV::SensorType::ShortThrowToFReflectivity);
-
-        enabledSensorTypes.emplace_back(
-            HoloLensForCV::SensorType::ShortThrowToFDepth);
+            HoloLensForCV::SensorType::VisibleLightLeftLeft);
 
         enabledSensorTypes.emplace_back(
             HoloLensForCV::SensorType::VisibleLightLeftFront);
 
         enabledSensorTypes.emplace_back(
             HoloLensForCV::SensorType::VisibleLightRightFront);
-#else
+
         enabledSensorTypes.emplace_back(
-            HoloLensForCV::SensorType::PhotoVideo);
-#endif /* ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS */
+            HoloLensForCV::SensorType::VisibleLightRightRight);
 
         _sensorFrameStreamer =
             ref new HoloLensForCV::SensorFrameStreamer();
