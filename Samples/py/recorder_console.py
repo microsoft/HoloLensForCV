@@ -344,6 +344,15 @@ def synchronize_sensor_frames(args, recording_path, output_path):
     return sync_frames, sync_poses
 
 
+def extract_recording(recording_path):
+    print("Extracting recording data...")
+    for file_name in glob.glob(os.path.join(recording_path, "*.tar")):
+        print("=> Extracting tarfile:", file_name)
+        tar = tarfile.open(file_name)
+        tar.extractall(path=recording_path)
+        tar.close()
+
+
 def reconstruct_recording(args, recording_path, dense=True):
     reconstruction_path = os.path.join(recording_path, "reconstruction")
     database_path = os.path.join(reconstruction_path, "database.db")
@@ -357,12 +366,7 @@ def reconstruct_recording(args, recording_path, dense=True):
 
     mkdir_if_not_exists(reconstruction_path)
 
-    print("Extracting recording data...")
-    for file_name in glob.glob(os.path.join(recording_path, "*.tar")):
-        print("=> Extracting tarfile:", file_name)
-        tar = tarfile.open(file_name)
-        tar.extractall(path=recording_path)
-        tar.close()
+    extract_recording(recording_path)
 
     print("Syncrhonizing sensor frames...")
     frames, poses = synchronize_sensor_frames(args, recording_path, image_path)
@@ -551,10 +555,11 @@ def print_help():
     print("  download X:               Download recording X from the HoloLens")
     print("  delete X:                 Delete recording X from the HoloLens")
     print("  delete all:               Delete all recordings from the HoloLens")
+    print("  extract X:                Extract recording X in the workspace")
     print("  reconstruct X:            Perform sparse and dense reconstruction "
-                                      "of recording X in workspace")
+                                      "of recording X in the workspace")
     print("  reconstruct sparse X:     Perform sparse reconstruction "
-                                      "of recording X in workspace")
+                                      "of recording X in the workspace")
 
 
 def list_workspace_recordings(workspace_path):
