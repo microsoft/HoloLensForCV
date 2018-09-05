@@ -246,11 +246,11 @@ def read_sensor_images(recording_path, camera_name):
     return paths, names, np.array(time_stamps), poses
 
 
-def synchronize_sensor_frames(args, recording_path, output_path):
+def synchronize_sensor_frames(args, recording_path, output_path, camera_names):
     # Collect all sensor frames.
 
     images = {}
-    for camera_name in ("vlc_ll", "vlc_lf", "vlc_rf", "vlc_rr"):
+    for camera_name in camera_names:
         images[camera_name] = read_sensor_images(recording_path, camera_name)
 
     # Synchronize the frames based on their time stamps.
@@ -315,10 +315,8 @@ def synchronize_sensor_frames(args, recording_path, output_path):
 
     # Copy the frames to the output directory.
 
-    mkdir_if_not_exists(os.path.join(output_path, "vlc_ll"))
-    mkdir_if_not_exists(os.path.join(output_path, "vlc_lf"))
-    mkdir_if_not_exists(os.path.join(output_path, "vlc_rf"))
-    mkdir_if_not_exists(os.path.join(output_path, "vlc_rr"))
+    for camera_name in camera_names:
+        mkdir_if_not_exists(os.path.join(output_path, camera_name))
 
     sync_frames = []
     sync_poses = []
@@ -368,8 +366,11 @@ def reconstruct_recording(args, recording_path, dense=True):
 
     extract_recording(recording_path)
 
+    camera_names = ("vlc_ll", "vlc_lf", "vlc_rf", "vlc_rr")
+
     print("Syncrhonizing sensor frames...")
-    frames, poses = synchronize_sensor_frames(args, recording_path, image_path)
+    frames, poses = synchronize_sensor_frames(
+        args, recording_path, image_path, camera_names)
 
     with open(image_list_path, "w") as fid:
         for frame in frames:
@@ -412,7 +413,7 @@ def reconstruct_recording(args, recording_path, dense=True):
     cursor = connection.cursor()
 
     camera_ids = {}
-    for camera_name in ("vlc_ll", "vlc_lf", "vlc_rf", "vlc_rr"):
+    for camera_name in camera_names:
         camera_params_list = \
             list(map(float, camera_params[camera_name].split()))
         camera_params_float = np.array(camera_params_list, dtype=np.double)
@@ -494,26 +495,26 @@ def reconstruct_recording(args, recording_path, dense=True):
 
     for i in range(args.num_refinements):
         if i == 0:
-            sparse_import_path = sparse_hololens_path
+            sparse_input_path = sparse_hololens_path
         else:
-            sparse_import_path = sparse_colmap_path + str(i - 1)
+            sparse_input_path = sparse_colmap_path + str(i - 1)
 
-        sparse_export_path = sparse_colmap_path + str(i)
+        sparse_output_path = sparse_colmap_path + str(i)
 
-        mkdir_if_not_exists(sparse_export_path)
+        mkdir_if_not_exists(sparse_output_path)
 
         subprocess.call([
             args.colmap_path, "point_triangulator",
             "--database_path", database_path,
             "--image_path", image_path,
-            "--import_path", sparse_import_path,
-            "--export_path", sparse_export_path,
+            "--input_path", sparse_input_path,
+            "--output_path", sparse_output_path,
         ])
 
         subprocess.call([
             args.colmap_path, "rig_bundle_adjuster",
-            "--input_path", sparse_export_path,
-            "--output_path", sparse_export_path,
+            "--input_path", sparse_output_path,
+            "--output_path", sparse_output_path,
             "--rig_config_path", rig_config_path,
             "--BundleAdjustment.max_num_iterations", str(25),
             "--BundleAdjustment.max_linear_solver_iterations", str(100),
@@ -525,19 +526,19 @@ def reconstruct_recording(args, recording_path, dense=True):
     subprocess.call([
         args.colmap_path, "image_undistorter",
         "--image_path", image_path,
-        "--input_path", sparse_export_path,
+        "--input_path", sparse_output_path,
         "--output_path", dense_path,
     ])
 
     subprocess.call([
-        args.colmap_path, "dense_stereo",
+        args.colmap_path, "patch_match_stereo",
         "--workspace_path",  dense_path,
         "--DenseStereo.geom_consistency", "0",
         "--DenseStereo.min_triangulation_angle", "2",
     ])
 
     subprocess.call([
-        args.colmap_path, "dense_fuser",
+        args.colmap_path, "stereo_fusion",
         "--workspace_path",  dense_path,
         "--DenseFusion.min_num_pixels", "15",
         "--input_type", "photometric",
@@ -632,6 +633,17 @@ def main():
                 recording_idx = parse_command_and_index(command)
                 if recording_idx is None:
                     dev_portal_browser.delete_recording(recording_idx)
+        elif command.startswith("extract"):
+            recording_idx = parse_command_and_index(command)
+            if recording_idx is not None:
+                try:
+                    recording_names = sorted(os.listdir(args.workspace_path))
+                    recording_name = recording_names[recording_idx]
+                except IndexError:
+                    print("=> Recording does not exist")
+                else:
+                    extract_recording(
+                        os.path.join(args.workspace_path, recording_name))
         elif command.startswith("reconstruct"):
             if not args.colmap_path:
                 print("=> Cannot reconstruct, "
