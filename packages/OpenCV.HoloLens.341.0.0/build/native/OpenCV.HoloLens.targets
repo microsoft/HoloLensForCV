@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <OpenCVHoloLens-Platform Condition="'$(Platform)' == 'Win32'">x86</OpenCVHoloLens-Platform>
+        <OpenCVHoloLens-Platform Condition="'$(Platform)' != 'Win32'">$(Platform)</OpenCVHoloLens-Platform>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'UAP'">
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Release'" Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_aruco341.dll" />
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Debug'"   Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_aruco341.dll" />
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Release'" Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_calib3d341.dll" />
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Debug'"   Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_calib3d341.dll" />
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Release'" Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_core341.dll" />
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Debug'"   Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_core341.dll" />
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Release'" Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_features2d341.dll" />
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Debug'"   Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_features2d341.dll" />
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Release'" Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_flann341.dll" />
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Debug'"   Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_flann341.dll" />
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Release'" Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_imgproc341.dll" />
+        <ReferenceCopyLocalPaths Condition="'$(Configuration)' == 'Debug'"   Include="$(MSBuildThisFileDirectory)..\..\runtimes\win10-$(OpenCVHoloLens-Platform)\native\opencv_imgproc341.dll" />
+    </ItemGroup>
+
+    <ItemDefinitionGroup Condition="'$(TargetPlatformIdentifier)' == 'UAP'">
+        <ClCompile>
+            <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory)..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        </ClCompile>
+        <Link>
+            <AdditionalLibraryDirectories>$(MSBuildThisFileDirectory)win10-$(OpenCVHoloLens-Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+            <AdditionalDependencies Condition="'$(Configuration)' == 'Release'">opencv_aruco341.lib;opencv_calib3d341.lib;opencv_core341.lib;opencv_features2d341.lib;opencv_flann341.lib;opencv_imgproc341.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalDependencies Condition="'$(Configuration)' == 'Debug'">opencv_aruco341.lib;opencv_calib3d341.lib;opencv_core341.lib;opencv_features2d341.lib;opencv_flann341.lib;opencv_imgproc341.lib;%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+    </ItemDefinitionGroup>
+</Project>

@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>OpenCV.HoloLens</id>
+    <version>341.0.0</version>
+    <title>OpenCV for HoloLens</title>
+    <authors>OpenCV authors</authors>
+    <owners>OpenCV authors</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://github.com/cvwin/cvwin/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/cvwin/cvwin</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/cvwin/cvwin/master/opencv.win.png</iconUrl>
+    <description>Pre-built OpenCV 3.x binaries on Windows (UWP). This package contains native builds of OpenCV3 - C++ (x86, x64, arm). Note that VideoIO, and all dependent modules, require UWP Desktop extensions.</description>
+    <releaseNotes>Initial release of OpenCV 3.1.0 nuget package on UWP.</releaseNotes>
+    <copyright>Copyright 2016, OpenCV, Harry Y</copyright>
+    <tags>OpenCV, CVWin, Computer Vision, Cpp, C++, VS2015, visual studio, windows, universal UWP, native, Win32</tags>
+  </metadata>
+</package>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:creator>OpenCV authors</dc:creator>
+  <dc:description>Pre-built OpenCV 3.x binaries on Windows (UWP). This package contains native builds of OpenCV3 - C++ (x86, x64, arm). Note that VideoIO, and all dependent modules, require UWP Desktop extensions.</dc:description>
+  <dc:identifier>OpenCV.HoloLens</dc:identifier>
+  <version>341.0.0</version>
+  <keywords>OpenCV, CVWin, Computer Vision, Cpp, C++, VS2015, visual studio, windows, universal UWP, native, Win32</keywords>
+  <lastModifiedBy>NuGet, Version=3.5.0.1938, Culture=neutral, PublicKeyToken=31bf3856ad364e35;Microsoft Windows NT 6.2.9200.0;.NET Framework 4.5</lastModifiedBy>
+</coreProperties>
