@@ -11,6 +11,8 @@
 """ Sample code to access HoloLens Research mode sensor stream """
 # pylint: disable=C0103
 
+from __future__ import print_function
+
 import argparse
 import socket
 import sys
@@ -29,35 +31,38 @@ PROCESS = True
 # ImageHeight PixelStride RowStride
 SENSOR_STREAM_HEADER_FORMAT = "@IBBHqIIII"
 
-SensorFrameStreamHeader = namedtuple('SensorFrameStreamHeader',
-                                     'Cookie VersionMajor VersionMinor FrameType Timestamp ImageWidth ImageHeight PixelStride RowStride')
+SENSOR_FRAME_STREAM_HEADER = namedtuple(
+    'SensorFrameStreamHeader',
+    'Cookie VersionMajor VersionMinor FrameType Timestamp ImageWidth ImageHeight PixelStride RowStride'
+)
 
-# Constants
 # Each port corresponds to a single stream type
 # Port for obtaining Photo Video Camera stream
 PV_STREAM_PORT = 23940
 
+
 def main(argv):
-    """ Receiver main"""
+    """Receiver main"""
     parser = argparse.ArgumentParser()
     required_named_group = parser.add_argument_group('named arguments')
 
     required_named_group.add_argument("-a", "--host",
                                       help="Host address to connect", required=True)
     args = parser.parse_args(argv)
-    
+
     # Create a TCP Stream socket
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    except socket.error, msg:
-        print "ERROR: Failed to create socket. Code: " + str(msg[0]) + ', Message: ' + msg[1]
+    except (socket.error, msg):
+        print("ERROR: Failed to create socket. Code: " + str(msg[0]) + ', Message: ' + msg[1])
         sys.exit()
-    print 'INFO: socket created'
+
+    print('INFO: socket created')
 
     # Try connecting to the address
     s.connect((args.host, PV_STREAM_PORT))
 
-    print 'INFO: Socket Connected to ' + args.host + ' on port ' + str(PV_STREAM_PORT)
+    print('INFO: Socket Connected to ' + args.host + ' on port ' + str(PV_STREAM_PORT))
 
     # Try receive data
     try:
@@ -65,13 +70,13 @@ def main(argv):
         while not quit:
             reply = s.recv(struct.calcsize(SENSOR_STREAM_HEADER_FORMAT))
             if not reply:
-                print 'ERROR: Failed to receive data'
+                print('ERROR: Failed to receive data')
                 sys.exit()
 
             data = struct.unpack(SENSOR_STREAM_HEADER_FORMAT, reply)
 
             # Parse the header
-            header = SensorFrameStreamHeader(*data)
+            header = SENSOR_FRAME_STREAM_HEADER(*data)
 
             # read the image in chunks
             image_size_bytes = header.ImageHeight * header.RowStride
@@ -81,7 +86,7 @@ def main(argv):
                 remaining_bytes = image_size_bytes - len(image_data)
                 image_data_chunk = s.recv(remaining_bytes)
                 if not image_data_chunk:
-                    print 'ERROR: Failed to receive image data'
+                    print('ERROR: Failed to receive image data')
                     sys.exit()
                 image_data += image_data_chunk
 
@@ -93,7 +98,7 @@ def main(argv):
                 image_array = cv2.Canny(gray,50,150,apertureSize = 3)
 
             cv2.imshow('Photo Video Camera Stream', image_array)
-            
+
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
     except KeyboardInterrupt:
@@ -101,6 +106,7 @@ def main(argv):
 
     s.close()
     cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
