@@ -74,6 +74,10 @@ namespace Holographic
         // Spatial perception object shared with the HoloLensForCV components.
         HoloLensForCV::SpatialPerception^ _spatialPerception;
 
+        // Optional focus point.
+        bool _hasFocusPoint{ false };
+        Windows::Foundation::Numerics::float3 _optionalFocusPoint;
+
     private:
         // Render loop timer.
         Graphics::StepTimer _timer;

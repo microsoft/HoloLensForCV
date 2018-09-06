@@ -652,7 +652,7 @@ namespace HoloLensForCV
             {
                 //
                 // Get the result of the initialization. This call will throw if initialization failed
-                // This pattern is docuemnted at https://msdn.microsoft.com/en-us/library/dd997692.aspx
+                // This pattern is documented at https://msdn.microsoft.com/en-us/library/dd997692.aspx
                 //
                 initializeMediaCaptureTask.get();
 

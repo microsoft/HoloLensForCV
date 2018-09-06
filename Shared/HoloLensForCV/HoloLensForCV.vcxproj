@@ -237,6 +237,7 @@
     <ClInclude Include="ISensorFrameSinkGroup.h" />
     <ClInclude Include="MediaFrameReaderContext.h" />
     <ClInclude Include="MediaFrameSourceGroupType.h" />
+    <ClInclude Include="MultiFrameBuffer.h" />
     <ClInclude Include="SensorFrame.h" />
     <ClInclude Include="SensorFrameReceiver.h" />
     <ClInclude Include="SensorFrameRecorder.h" />
@@ -253,6 +254,7 @@
     <ClCompile Include="CameraIntrinsics.cpp" />
     <ClCompile Include="CsvWriter.cpp" />
     <ClCompile Include="MediaFrameReaderContext.cpp" />
+    <ClCompile Include="MultiFrameBuffer.cpp" />
     <ClCompile Include="SensorFrame.cpp" />
     <ClCompile Include="SensorFrameReceiver.cpp" />
     <ClCompile Include="SensorFrameRecorder.cpp" />

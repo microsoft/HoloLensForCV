@@ -1,4 +1,4 @@
-﻿//*********************************************************
+//*********************************************************
 //
 // Copyright (c) Microsoft. All rights reserved.
 // This code is licensed under the MIT License (MIT).
@@ -11,44 +11,40 @@
 
 #pragma once
 
-#include "targetver.h"
-
-#include <map>
-#include <cmath>
+#include <agile.h>
 #include <array>
-#include <mutex>
-#include <memory>
-#include <string>
-#include <cstddef>
-#include <shared_mutex>
-#include <unordered_set>
-
-#if !defined(WIN32_LEAN_AND_MEAN)
-#define WIN32_LEAN_AND_MEAN
-#endif /* !defined(WIN32_LEAN_AND_MEAN) */
-
-#if !defined(NOMINMAX)
-#define NOMINMAX
-#endif /* !defined(NOMINMAX) */
-
-#include <Windows.h>
-
+#include <collection.h>
 #include <d2d1_2.h>
 #include <d3d11_4.h>
 #include <DirectXColors.h>
-#include <DirectXHelpers.h>
-#include <DirectXMath.h>
 #include <dwrite_2.h>
+#include <map>
+#include <deque>
+#include <memory>
+#include <mutex>
+#include <shared_mutex>
 #include <wincodec.h>
-#include <windows.graphics.directx.direct3d11.interop.h>
-
-#include <agile.h>
-#include <collection.h>
 #include <WindowsNumerics.h>
 #include <ppltasks.h>
+#include <stddef.h>
+#include <unordered_set>
 #include <memorybuffer.h>
 
+#include <windows.graphics.directx.direct3d11.interop.h>
+#include <Collection.h>
+
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/aruco.hpp>
+
+#include <Eigen/Eigen>
+
+#include <SimpleMath.h>
+#include <DirectXHelpers.h>
+
 #include <Debugging/All.h>
-#include <Io/All.h>
 #include <Graphics/All.h>
 #include <Rendering/All.h>
+#include <Holographic/All.h>
+#include <OpenCVHelpers/All.h>

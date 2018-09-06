@@ -61,4 +61,29 @@ namespace rmcv
             wrappedImageType,
             pixelBufferData);
     }
+
+    void WrapHoloLensVisibleLightCameraFrameWithCvMat(
+        _In_ HoloLensForCV::SensorFrame^ holoLensSensorFrame,
+        _Out_ cv::Mat& wrappedImage)
+    {
+        Windows::Graphics::Imaging::SoftwareBitmap^ bitmap =
+            holoLensSensorFrame->SoftwareBitmap;
+
+        Windows::Graphics::Imaging::BitmapBuffer^ bitmapBuffer =
+            bitmap->LockBuffer(
+                Windows::Graphics::Imaging::BitmapBufferAccessMode::Read);
+
+        uint32_t pixelBufferDataLength = 0;
+
+        uint8_t* pixelBufferData =
+            Io::GetTypedPointerToMemoryBuffer<uint8_t>(
+                bitmapBuffer->CreateReference(),
+                pixelBufferDataLength);
+
+        wrappedImage = cv::Mat(
+            bitmap->PixelHeight,
+            bitmap->PixelWidth * 4,
+            CV_8UC1,
+            pixelBufferData);
+    }
 }

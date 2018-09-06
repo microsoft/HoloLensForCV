@@ -51,6 +51,7 @@ namespace Graphics
 
         // Direct3D device resources.
         ID3D11RenderTargetView* GetBackBufferRenderTargetView()     const { return _d3dRenderTargetView.Get();     }
+        ID3D11Texture2D*        GetDepthStencil()                   const { return _d3dDepthStencil.Get(); }
         ID3D11DepthStencilView* GetDepthStencilView()               const { return _d3dDepthStencilView.Get();     }
         ID3D11Texture2D*        GetBackBufferTexture2D()            const { return _d3dBackBuffer.Get();           }
         D3D11_VIEWPORT          GetViewport()                       const { return _d3dViewport;                   }
@@ -66,6 +67,7 @@ namespace Graphics
     private:
         // Direct3D rendering objects. Required for 3D.
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView>      _d3dRenderTargetView;
+        Microsoft::WRL::ComPtr<ID3D11Texture2D>             _d3dDepthStencil;
         Microsoft::WRL::ComPtr<ID3D11DepthStencilView>      _d3dDepthStencilView;
         Microsoft::WRL::ComPtr<ID3D11Texture2D>             _d3dBackBuffer;
 

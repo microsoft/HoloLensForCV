@@ -16,6 +16,7 @@
 #include <memory>
 #include <mutex>
 #include <ctime>
+#include <deque>
 #include <chrono>
 #include <fstream>
 #include <sstream>
@@ -66,3 +67,5 @@
 #include "MediaFrameReaderContext.h"
 #include "MediaFrameSourceGroupType.h"
 #include "MediaFrameSourceGroup.h"
+
+#include "MultiFrameBuffer.h"
