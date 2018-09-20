@@ -631,7 +631,7 @@ def main():
                     dev_portal_browser.delete_recording(0)
             else:
                 recording_idx = parse_command_and_index(command)
-                if recording_idx is None:
+                if recording_idx is not None:
                     dev_portal_browser.delete_recording(recording_idx)
         elif command.startswith("extract"):
             recording_idx = parse_command_and_index(command)
