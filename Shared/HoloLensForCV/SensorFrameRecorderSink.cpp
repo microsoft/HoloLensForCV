@@ -148,11 +148,6 @@ namespace HoloLensForCV
 		// Write the sensor frame as a bitmap to the archive.
 		//
 
-		wchar_t bitmapPath[MAX_PATH] = {};
-		swprintf_s(
-			bitmapPath, L"%s\\%020llu.pgm",
-			_sensorName->Data(), sensorFrame->Timestamp.UniversalTime);
-
 #if DBG_ENABLE_VERBOSE_LOGGING
 		dbg::trace(
 			L"SensorFrameRecorderSink::Send: saving sensor frame to %s",
@@ -162,87 +157,135 @@ namespace HoloLensForCV
 		Windows::Graphics::Imaging::SoftwareBitmap^ softwareBitmap =
 			sensorFrame->SoftwareBitmap;
 
+		// Determine metadata information about frame.
+
+		int maxBitmapValue = 0;
+		int actualBitmapWidth = softwareBitmap->PixelWidth;
+
+		switch (softwareBitmap->BitmapPixelFormat)
 		{
-			// Determine metadata information about frame.
 
-			int maxBitmapValue = 0;
-			int actualBitmapWidth = softwareBitmap->PixelWidth;
+		case Windows::Graphics::Imaging::BitmapPixelFormat::Gray16:
+			maxBitmapValue = 65535;
+			break;
 
-			switch (softwareBitmap->BitmapPixelFormat)
+		case Windows::Graphics::Imaging::BitmapPixelFormat::Gray8:
+			maxBitmapValue = 255;
+			break;
+
+		case Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8:
+			if ((_sensorType == SensorType::VisibleLightLeftFront) ||
+				(_sensorType == SensorType::VisibleLightLeftLeft) ||
+				(_sensorType == SensorType::VisibleLightRightFront) ||
+				(_sensorType == SensorType::VisibleLightRightRight))
 			{
-
-			case Windows::Graphics::Imaging::BitmapPixelFormat::Gray16:
-				maxBitmapValue = 65535;
-				break;
-
-			case Windows::Graphics::Imaging::BitmapPixelFormat::Gray8:
 				maxBitmapValue = 255;
-				break;
-
-			case Windows::Graphics::Imaging::BitmapPixelFormat::Bgra8:
-				if ((_sensorType == SensorType::VisibleLightLeftFront) ||
-					(_sensorType == SensorType::VisibleLightLeftLeft) ||
-					(_sensorType == SensorType::VisibleLightRightFront) ||
-					(_sensorType == SensorType::VisibleLightRightRight))
-				{
-					maxBitmapValue = 255;
-					actualBitmapWidth = actualBitmapWidth * 4;
-				}
-				else
-				{
-					ASSERT(false);
-				}
-
-				break;
-
-			default:
-				// Unsupported by PGM format. Need to update save logic
-#if DBG_ENABLE_INFORMATIONAL_LOGGING
-				dbg::trace(
-					L"SensorFrameRecorderSink::Send: unsupported bitmap pixel format for PGM");
-#endif /* DBG_ENABLE_INFORMATIONAL_LOGGING */
-
+				actualBitmapWidth = actualBitmapWidth * 4;
+			}
+            else if (_sensorType == SensorType::PhotoVideo)
+            {
+                maxBitmapValue = 255;
+            }
+			else
+			{
 				ASSERT(false);
-				break;
 			}
 
-			// Compose PGM header string.
-			std::stringstream header;
-			header << "P5\n"
-				<< actualBitmapWidth << " "
-				<< softwareBitmap->PixelHeight << "\n"
-				<< maxBitmapValue << "\n";
-			const std::string headerString = header.str();
+			break;
 
-			// Get bitmap buffer object of the frame.
-			Windows::Graphics::Imaging::BitmapBuffer^ bitmapBuffer =
-				softwareBitmap->LockBuffer(
-					Windows::Graphics::Imaging::BitmapBufferAccessMode::Read);
+		default:
+			// Unsupported by PGM format. Need to update save logic
+#if DBG_ENABLE_INFORMATIONAL_LOGGING
+			dbg::trace(
+				L"SensorFrameRecorderSink::Send: unsupported bitmap pixel format for PGM");
+#endif /* DBG_ENABLE_INFORMATIONAL_LOGGING */
 
-			// Get raw pointer to the buffer object.
-			uint32_t pixelBufferDataLength = 0;
-			const uint8_t* pixelBufferData =
-				Io::GetTypedPointerToMemoryBuffer<uint8_t>(
-					bitmapBuffer->CreateReference(),
-					pixelBufferDataLength);
-
-			// Allocate data for PGM bitmap file.
-			std::vector<uint8_t> bitmapData;
-			bitmapData.reserve(headerString.size() + pixelBufferDataLength);
-
-			// Add PGM header data.
-			bitmapData.insert(
-				bitmapData.end(),
-				headerString.c_str(), headerString.c_str() + headerString.size());
-
-			// Add raw pixel data.
-			bitmapData.insert(
-				bitmapData.end(),
-				pixelBufferData, pixelBufferData + pixelBufferDataLength);
-
-			// Add the bitmap to the tarball.
-			_bitmapTarball->AddFile(bitmapPath, bitmapData.data(), bitmapData.size());
+			ASSERT(false);
+			break;
 		}
+
+        // Determine which bitmap format to use.
+        std::string bitmapFormat;
+        std::wstring bitmapFileExtension;
+        if (_sensorType == SensorType::PhotoVideo)
+        {
+            bitmapFormat = "P6";
+            bitmapFileExtension = L"ppm";
+        }
+        else 
+        {
+            bitmapFormat = "P5";
+            bitmapFileExtension = L"pgm";
+        }
+
+        // Compose the output file name.
+        wchar_t bitmapPath[MAX_PATH];
+        swprintf_s(
+            bitmapPath, L"%s\\%020llu.%s",
+            _sensorName->Data(),
+            sensorFrame->Timestamp.UniversalTime,
+            bitmapFileExtension.c_str());
+
+		// Compose PGM header string.
+		std::stringstream header;
+		header << bitmapFormat << "\n"
+			<< actualBitmapWidth << " "
+			<< softwareBitmap->PixelHeight << "\n"
+			<< maxBitmapValue << "\n";
+		const std::string headerString = header.str();
+
+		// Get bitmap buffer object of the frame.
+		Windows::Graphics::Imaging::BitmapBuffer^ bitmapBuffer =
+			softwareBitmap->LockBuffer(
+				Windows::Graphics::Imaging::BitmapBufferAccessMode::Read);
+
+		// Get raw pointer to the buffer object.
+		uint32_t pixelBufferDataLength = 0;
+		const uint8_t* pixelBufferData =
+			Io::GetTypedPointerToMemoryBuffer<uint8_t>(
+				bitmapBuffer->CreateReference(),
+				pixelBufferDataLength);
+
+        // Convert the software bitmap to raw bytes.
+        std::vector<uint8_t> bitmapData;
+        if (_sensorType == SensorType::PhotoVideo)
+        {
+            const uint32_t numPixels = softwareBitmap->PixelWidth * softwareBitmap->PixelHeight;
+
+            // Allocate data for PGM bitmap file.
+            bitmapData.reserve(headerString.size() + numPixels * 3);
+
+            // Add PGM header data.
+            bitmapData.insert(
+                bitmapData.end(),
+                headerString.c_str(), headerString.c_str() + headerString.size());
+
+            for (uint32_t i = 0; i < numPixels; ++i)
+            {
+                for (uint32_t j = 0; j < 3; ++j)
+                {
+                    bitmapData.push_back(pixelBufferData[i * 4 + 2 - j]);
+                }
+            }
+        }
+        else
+        {
+            // Allocate data for PGM bitmap file.
+            bitmapData.reserve(headerString.size() + pixelBufferDataLength);
+
+            // Add PGM header data.
+            bitmapData.insert(
+                bitmapData.end(),
+                headerString.c_str(), headerString.c_str() + headerString.size());
+
+            // Add raw pixel data.
+            bitmapData.insert(
+                bitmapData.end(),
+                pixelBufferData, pixelBufferData + pixelBufferDataLength);
+        }
+
+		// Add the bitmap to the tarball.
+		_bitmapTarball->AddFile(bitmapPath, bitmapData.data(), bitmapData.size());
 
 		//
 		// Record the sensor frame meta data to the csv file.
