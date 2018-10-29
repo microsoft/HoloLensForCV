@@ -30,7 +30,9 @@ namespace Recorder
     : Holographic::AppMainBase(deviceResources)
     , _speechSynthesizer(ref new Windows::Media::SpeechSynthesis::SpeechSynthesizer())
     , _mediaFrameSourceGroupStarted(false)
+	, _PVFrameSourceGroupStarted(false)
     , _sensorFrameRecorderStarted(false)
+	, _PVFrameRecorderStarted(false)
   {
   }
 
@@ -38,6 +40,7 @@ namespace Recorder
     Windows::Graphics::Holographic::HolographicSpace^ holographicSpace)
   {
     StartHoloLensMediaFrameSourceGroup();
+	StartPVMediaFrameSourceGroup();
 
 #ifdef RECORDER_USE_SPEECH
     StartRecognizeSpeechCommands();
@@ -74,22 +77,41 @@ namespace Recorder
   void AppMain::LoadAppState()
   {
     StartHoloLensMediaFrameSourceGroup();
+	StartPVMediaFrameSourceGroup();
   }
 
   void AppMain::SaveAppState()
   {
-    if (_mediaFrameSourceGroup == nullptr) {
+    if (_mediaFrameSourceGroup == nullptr && _PVFrameSourceGroup == nullptr) {
       return;
-    }
+    };
 
+	auto sensorFrameRecorderStopAsyncTask =
+		concurrency::create_task(
+			_mediaFrameSourceGroup->StopAsync());
+	auto PVFrameRecorderStopAsyncTask =
+		concurrency::create_task(
+			_PVFrameSourceGroup->StopAsync());
 
-    concurrency::create_task(_mediaFrameSourceGroup->StopAsync()).then([&]()
+	sensorFrameRecorderStopAsyncTask.then([&]()
     {
-      StopRecording();
+		PVFrameRecorderStopAsyncTask.then([&]()
+		{
+			StopRecording();
 
-      delete _mediaFrameSourceGroup;
-      _mediaFrameSourceGroup = nullptr;
-      _mediaFrameSourceGroupStarted = false;
+			if (_mediaFrameSourceGroup != nullptr)
+			{
+				delete _mediaFrameSourceGroup;
+				_mediaFrameSourceGroup = nullptr;
+				_mediaFrameSourceGroupStarted = false;
+			}
+			if (_PVFrameSourceGroup != nullptr)
+			{
+				delete _PVFrameSourceGroup;
+				_PVFrameSourceGroup = nullptr;
+				_PVFrameSourceGroupStarted = false;
+			}
+		});
     }).wait();
   }
 
@@ -101,36 +123,64 @@ namespace Recorder
   {
     std::unique_lock<std::mutex> lock(_startStopRecordingMutex);
 
-    if (!_mediaFrameSourceGroupStarted || _sensorFrameRecorderStarted)
+	bool startSensorFrameRecorder = !(!_mediaFrameSourceGroupStarted || _sensorFrameRecorderStarted);
+	bool startPVFrameRecorder = enablePV && !(!_PVFrameSourceGroupStarted || _PVFrameRecorderStarted);
+    if (!startSensorFrameRecorder && !startPVFrameRecorder)
     {
       return;
     }
 
     SaySentence(Platform::StringReference(L"Beginning recording"));
+	
+	if (startSensorFrameRecorder)
+	{
+		auto sensorFrameRecorderStartAsyncTask =
+			concurrency::create_task(
+				_sensorFrameRecorder->StartAsync());
 
-    auto sensorFrameRecorderStartAsyncTask =
-      concurrency::create_task(
-        _sensorFrameRecorder->StartAsync());
+		sensorFrameRecorderStartAsyncTask.then([&]()
+		{
+			_sensorFrameRecorderStarted = true;
+		});
+	}
 
-    sensorFrameRecorderStartAsyncTask.then([&]()
-    {
-      _sensorFrameRecorderStarted = true;
-    });
+	// TODO: Can PV be better synchronized?
+	if (startPVFrameRecorder)
+	{
+		auto PVFrameRecorderStartAsyncTask =
+			concurrency::create_task(
+				_PVFrameRecorder->StartAsync());
+		PVFrameRecorderStartAsyncTask.then([&]()
+		{
+			_PVFrameRecorderStarted = true;
+		});
+	}
   }
 
   void AppMain::StopRecording()
   {
     std::unique_lock<std::mutex> lock(_startStopRecordingMutex);
 
-    if (!_mediaFrameSourceGroupStarted || !_sensorFrameRecorderStarted)
+	bool stopSensorFrameRecorder = _mediaFrameSourceGroupStarted && _sensorFrameRecorderStarted;
+	bool stopPVFrameRecorder = _PVFrameSourceGroupStarted && _PVFrameRecorderStarted;
+
+    if (!stopSensorFrameRecorder && !stopSensorFrameRecorder)
     {
       return;
     }
 
     SaySentence(Platform::StringReference(L"Ending recording, wait a moment to finish"));
 
-    _sensorFrameRecorder->Stop();
-    _sensorFrameRecorderStarted = false;
+	if (stopSensorFrameRecorder)
+	{
+		_sensorFrameRecorder->Stop();
+		_sensorFrameRecorderStarted = false;
+	}
+	if (stopPVFrameRecorder)
+	{
+		_PVFrameRecorder->Stop();
+		_PVFrameRecorderStarted = false;
+	}	
 
     SaySentence(Platform::StringReference(L"Finished recording"));
   }
@@ -382,52 +432,33 @@ namespace Recorder
 
   void AppMain::StartHoloLensMediaFrameSourceGroup()
   {
-    REQUIRES(
-      !_mediaFrameSourceGroupStarted &&
-      !_sensorFrameRecorderStarted &&
-      nullptr != _spatialPerception);
+	  REQUIRES(
+		  !_mediaFrameSourceGroupStarted &&
+		  !_sensorFrameRecorderStarted &&
+		  nullptr != _spatialPerception);
 
-    _sensorFrameRecorder =
-      ref new HoloLensForCV::SensorFrameRecorder();
+	  _sensorFrameRecorder =
+		  ref new HoloLensForCV::SensorFrameRecorder();
 
-    _mediaFrameSourceGroup =
-      ref new HoloLensForCV::MediaFrameSourceGroup(
-        HoloLensForCV::MediaFrameSourceGroupType::HoloLensResearchModeSensors,
-        _spatialPerception, _sensorFrameRecorder);
+	  _mediaFrameSourceGroup =
+		  ref new HoloLensForCV::MediaFrameSourceGroup(
+			  HoloLensForCV::MediaFrameSourceGroupType::HoloLensResearchModeSensors,
+			  _spatialPerception, _sensorFrameRecorder);
 
-    //
-    // Enabling all of the Research Mode sensors at the same time can be quite expensive
-    // performance-wise. It's best to scope down the list of enabled sensors to just those
-    // that are required for a given task. In this example, all sensors are selected.
-    // To only select a subset, use the commented code below.
-    //
 
-    _sensorFrameRecorder->EnableAll();
-    _mediaFrameSourceGroup->EnableAll();
-
-    /*
-
-    std::vector<HoloLensForCV::SensorType> enabledSensorTypes;
-
-        enabledSensorTypes.emplace_back(
-            HoloLensForCV::SensorType::VisibleLightLeftLeft);
-
-        enabledSensorTypes.emplace_back(
-            HoloLensForCV::SensorType::VisibleLightLeftFront);
-
-        enabledSensorTypes.emplace_back(
-            HoloLensForCV::SensorType::VisibleLightRightFront);
-
-        enabledSensorTypes.emplace_back(
-            HoloLensForCV::SensorType::VisibleLightRightRight);
-
-        for (const auto enabledSensorType : enabledSensorTypes)
-        {
-            _sensorFrameRecorder->Enable(enabledSensorType);
-            _mediaFrameSourceGroup->Enable(enabledSensorType);
-        }
-
-    */
+	  if (enabledSensorTypes.size() == 0)
+	  {
+		  _sensorFrameRecorder->EnableAll();
+		  _mediaFrameSourceGroup->EnableAll();
+	  }    
+	  else
+	  {
+		  for (const auto enabledSensorType : enabledSensorTypes)
+		  {
+			  _sensorFrameRecorder->Enable(enabledSensorType);
+			  _mediaFrameSourceGroup->Enable(enabledSensorType);
+		  }
+	  }        
 
     //
     // Start the media frame source groups.
@@ -441,4 +472,40 @@ namespace Recorder
       _mediaFrameSourceGroupStarted = true;
     });
   }
+
+  void AppMain::StartPVMediaFrameSourceGroup()
+  {
+	  REQUIRES(
+		  !_PVFrameSourceGroupStarted &&
+		  !_PVFrameRecorderStarted &&
+		  nullptr != _spatialPerception);
+
+	  _PVFrameRecorder =
+		  ref new HoloLensForCV::SensorFrameRecorder();
+	  _PVFrameRecorder->SetPV();
+
+	  _PVFrameSourceGroup =
+		  ref new HoloLensForCV::MediaFrameSourceGroup(
+			  HoloLensForCV::MediaFrameSourceGroupType::PhotoVideoCamera,
+			  _spatialPerception, _PVFrameRecorder);
+	  
+	  // One could avoid initializing _PVFrameRecorder and _PVFrameSourceGroup if PV stream is enabled;
+	  // however, those initializations help simplify the code at stop/start time
+	  if (enablePV)
+	  {
+		  _PVFrameRecorder->Enable(HoloLensForCV::SensorType::PhotoVideo);
+		  // This call will enable the PhotoVideo MediaFrameSourceGroup
+		  _PVFrameSourceGroup->EnableAll();
+
+		  auto startPVFrameSourceGroupTask =
+			  concurrency::create_task(
+				  _PVFrameSourceGroup->StartAsync());
+
+		  startPVFrameSourceGroupTask.then([&]() {
+			  _PVFrameSourceGroupStarted = true;
+		  });
+	  }
+  }
+
+
 }

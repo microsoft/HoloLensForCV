@@ -44,6 +44,8 @@ namespace HoloLensForCV
         Windows::Foundation::IAsyncAction^ StartAsync();
 
         void Stop();
+		// Set the frame recorder for the PV stream
+		void SetPV();
 
         virtual ISensorFrameSink^ GetSensorFrameSink(
             _In_ SensorType sensorType);
@@ -64,6 +66,7 @@ namespace HoloLensForCV
         std::mutex _recorderMutex;
 
         Windows::Storage::StorageFolder^ _archiveSourceFolder;
+		bool _isPV;
 
         std::array<SensorFrameRecorderSink^, (size_t)SensorType::NumberOfSensorTypes> _sensorFrameSinks;
     };

@@ -15,12 +15,18 @@ namespace HoloLensForCV
 {
     SensorFrameRecorder::SensorFrameRecorder()
     {
+		_isPV = false;
     }
 
     SensorFrameRecorder::~SensorFrameRecorder()
     {
         Stop();
     }
+
+	void SensorFrameRecorder::SetPV()
+	{
+		_isPV = true;
+	}
 
     void SensorFrameRecorder::EnableAll()
     {
@@ -67,11 +73,12 @@ namespace HoloLensForCV
         return concurrency::create_async(
             [this]()
         {
+			Platform::StringReference archivName = _isPV ? L"PVarchiveSource" : L"archiveSource";
             Windows::Storage::StorageFolder^ temporaryStorageFolder =
                 Windows::Storage::ApplicationData::Current->TemporaryFolder;
 
             return concurrency::create_task(temporaryStorageFolder->CreateFolderAsync(
-                L"archiveSource",
+                archivName,
                 Windows::Storage::CreationCollisionOption::ReplaceExisting)).then(
                     [&](Windows::Storage::StorageFolder^ archiveSourceFolder)
                 {
@@ -152,13 +159,14 @@ namespace HoloLensForCV
 
             swprintf_s(
                 archiveName,
-                L"HoloLensRecording__%04i_%02i_%02i__%02i_%02i_%02i",
+                L"HoloLensRecording__%04i_%02i_%02i__%02i_%02i_%02i_%01d",
                 timeNowUtc.tm_year + 1900,
                 timeNowUtc.tm_mon + 1,
                 timeNowUtc.tm_mday,
                 timeNowUtc.tm_hour,
                 timeNowUtc.tm_min,
-                timeNowUtc.tm_sec);
+                timeNowUtc.tm_sec,
+				_isPV);
 
             Platform::String^ archiveNameString =
                 ref new Platform::String(archiveName);
