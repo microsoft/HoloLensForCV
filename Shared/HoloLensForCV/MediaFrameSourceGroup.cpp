@@ -137,6 +137,9 @@ namespace HoloLensForCV
                 const wchar_t* c_HoloLensDevelopmentEditionPhotoVideoSourceGroupDisplayName =
                     L"MN34150";
 
+                const wchar_t* c_HoloLensResearchModeSensorStreamingGroupDisplayName =
+                    L"Sensor Streaming";
+
                 if (MediaFrameSourceGroupType::PhotoVideoCamera == _mediaFrameSourceGroupType &&
                     (0 == wcscmp(c_HoloLensDevelopmentEditionPhotoVideoSourceGroupDisplayName, sourceGroupDisplayName)))
                 {
@@ -151,12 +154,12 @@ namespace HoloLensForCV
                     break;
                 }
 #if ENABLE_HOLOLENS_RESEARCH_MODE_SENSORS
-                else if (MediaFrameSourceGroupType::HoloLensResearchModeSensors == _mediaFrameSourceGroupType)
+                else if (MediaFrameSourceGroupType::HoloLensResearchModeSensors == _mediaFrameSourceGroupType &&
+                    (0 == wcscmp(c_HoloLensResearchModeSensorStreamingGroupDisplayName, sourceGroupDisplayName)))
                 {
 #if DBG_ENABLE_INFORMATIONAL_LOGGING
                     dbg::trace(
-                        L"MediaFrameSourceGroup::InitializeMediaSourceWorkerAsync: assuming '%s' is the HoloLens Sensor Streaming media frame source group.",
-                        sourceGroupDisplayName);
+                        L"MediaFrameSourceGroup::InitializeMediaSourceWorkerAsync: found the HoloLens Sensor Streaming media frame source group.");
 #endif /* DBG_ENABLE_INFORMATIONAL_LOGGING */
 
                     selectedSourceGroup =
