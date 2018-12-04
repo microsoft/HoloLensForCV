@@ -533,14 +533,14 @@ def reconstruct_recording(args, recording_path, dense=True):
     subprocess.call([
         args.colmap_path, "patch_match_stereo",
         "--workspace_path",  dense_path,
-        "--DenseStereo.geom_consistency", "0",
-        "--DenseStereo.min_triangulation_angle", "2",
+        "--PatchMatchStereo.geom_consistency", "0",
+        "--PatchMatchStereo.min_triangulation_angle", "2",
     ])
 
     subprocess.call([
         args.colmap_path, "stereo_fusion",
         "--workspace_path",  dense_path,
-        "--DenseFusion.min_num_pixels", "15",
+        "--StereoFusion.min_num_pixels", "15",
         "--input_type", "photometric",
         "--output_path", os.path.join(dense_path, "fused.ply"),
     ])
