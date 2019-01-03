@@ -82,7 +82,7 @@ namespace Recorder
 
   void AppMain::SaveAppState()
   {
-    if (_researchModeMediaFrameSourceGroup == nullptr) {
+    if (_photoVideoMediaFrameSourceGroup == nullptr || _researchModeMediaFrameSourceGroup == nullptr) {
       return;
     }
 
