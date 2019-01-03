@@ -90,8 +90,11 @@ namespace Recorder
     Windows::Foundation::EventRegistrationToken _speechRecognitionQualityDegradedToken;
 
     // HoloLens media frame source group for reading the sensor streams.
-    HoloLensForCV::MediaFrameSourceGroup^ _mediaFrameSourceGroup;
-    std::atomic_bool _mediaFrameSourceGroupStarted;
+    HoloLensForCV::MediaFrameSourceGroup^ _photoVideoMediaFrameSourceGroup;
+    std::atomic_bool _photoVideoMediaFrameSourceGroupStarted;
+    // Note that we have to create a separate media frame source group for the research mode sensors.
+    HoloLensForCV::MediaFrameSourceGroup^ _researchModeMediaFrameSourceGroup;
+    std::atomic_bool _researchModeMediaFrameSourceGroupStarted;
 
     // Sensor stream recorder for the sensor streams.
     HoloLensForCV::SensorFrameRecorder^ _sensorFrameRecorder;
