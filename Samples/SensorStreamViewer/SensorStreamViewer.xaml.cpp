@@ -286,9 +286,6 @@ task<bool> SensorStreamViewer::TryInitializeMediaCaptureAsync(MediaFrameSourceGr
     // instead of preferring GPU D3DSurface images.
     settings->MemoryPreference = MediaCaptureMemoryPreference::Cpu;
 
-    // Only stream video and don't initialize audio capture devices.
-    settings->StreamingCaptureMode = StreamingCaptureMode::Video;
-
     // Initialize MediaCapture with the specified group.
     // This must occur on the UI thread because some device families
     // (such as Xbox) will prompt the user to grant consent for the
