@@ -30,6 +30,7 @@ namespace HoloLensForCV
 
         property Windows::Media::Devices::Core::CameraIntrinsics^ CoreCameraIntrinsics;
         property CameraIntrinsics^ SensorStreamingCameraIntrinsics;
+        property Windows::Perception::Spatial::SpatialCoordinateSystem^ FrameCoordinateSystem;
 
         property Windows::Foundation::Numerics::float4x4 FrameToOrigin;
         property Windows::Foundation::Numerics::float4x4 CameraViewTransform;
