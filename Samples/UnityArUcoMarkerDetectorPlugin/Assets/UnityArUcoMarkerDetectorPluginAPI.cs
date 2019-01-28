@@ -7,8 +7,22 @@ using UnityEngine;
 using UnityEngine.XR.WSA;
 #endif
 
-namespace SpectatorView
+namespace ArUcoMarkerDetection
 {
+    public class Marker
+    {
+        public int Id { get; set; }
+        public Vector3 Position { get; set; }
+        public Quaternion Rotation { get; set; }
+
+        public Marker(int id, Vector3 position, Quaternion rotation)
+        {
+            Id = id;
+            Position = position;
+            Rotation = rotation;
+        }
+    }
+
     public class UnityArUcoMarkerDetectorPluginAPI
     {
         [DllImport("UnityArUcoMarkerDetectorPlugin", EntryPoint = "CheckPlugin")]
@@ -33,6 +47,7 @@ namespace SpectatorView
         internal static extern bool GetDetectedMarkerPoseNative(int detectedId, float[] position, float[] quaternion, float[] cameraToWorldUnity);
 
         [SerializeField] float _markerSize = 0.03f; // meters
+        [SerializeField] uint _requiredObservations = 5;
         private const int _arucoDictionaryId = 10; // equivalent to cv::aruco::DICT_6X6_250
         private bool _initialized = false;
         private Dictionary<int, List<Marker>> _markerObservations = new Dictionary<int, List<Marker>>();
@@ -190,7 +205,7 @@ namespace SpectatorView
 
                         foreach (var markerListPair in _markerObservations)
                         {
-                            if (markerListPair.Value.Count > 10)
+                            if (markerListPair.Value.Count > _requiredObservations)
                             {
                                 var marker = CalcAverageMarker(markerListPair.Value);
                                 _verifiedMarkers[marker.Id] = marker;
