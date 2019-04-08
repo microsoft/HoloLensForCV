@@ -193,7 +193,7 @@ class DevicePortalBrowser(object):
         self.recording_names.remove(recording_name)
 
 
-def read_sensor_poses(path):
+def read_sensor_poses(path, identity_camera_to_image=False):
     poses = {}
     with open(path, "r") as fid:
         header = fid.readline()
@@ -213,8 +213,11 @@ def read_sensor_poses(path):
             camera_to_frame = np.array(list(map(float, elems[18:34])))
             camera_to_frame = camera_to_frame.reshape(4, 4).T
             if abs(np.linalg.det(frame_to_origin[:3, :3]) - 1) < 0.01:
-                camera_to_image = np.array(
-                    [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
+                if identity_camera_to_image:
+                    camera_to_image = np.eye(4)
+                else:
+                    camera_to_image = np.array(
+                        [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
                 poses[time_stamp] = np.dot(
                     camera_to_image,
                     np.dot(camera_to_frame, np.linalg.inv(frame_to_origin)))
