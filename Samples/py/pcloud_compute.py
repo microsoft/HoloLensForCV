@@ -109,7 +109,7 @@ def process_folder(args, cam):
     us = vs = None
     for i_path, path in enumerate(depth_paths):
         if (i_path % 10) == 0:
-            print("Working on path %d out of %d" % (i_path+1, len(depth_paths)))
+            print("Progress: %d/%d" % (i_path+1, len(depth_paths)))
         output_suffix = "_%s" % args.output_suffix if len(args.output_suffix) else ""
         pcloud_output_path = os.path.join(output_folder, os.path.basename(path).replace(".pgm", "%s.obj" % output_suffix))
         if os.path.exists(pcloud_output_path):
