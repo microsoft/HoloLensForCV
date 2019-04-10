@@ -10,9 +10,9 @@ import os
 from recorder_console import read_sensor_poses
 
 
-# Range for short throw and long throw depth values (approximate), in meters
+# Depth range for short throw and long throw, in meters (approximate)
 SHORT_THROW_RANGE = [0.02, 3.]
-LONG_THROW_RANGE = [1., 5.]
+LONG_THROW_RANGE = [1., 4.]
 
 
 def save_obj(output_path, points):
@@ -23,13 +23,12 @@ def save_obj(output_path, points):
 
 
 def parse_projection_bin(path, w, h):
-    # With ref to issue #63
+    # See repo issue #63
     # Read binary file
     projection = np.fromfile(path, dtype=np.float32)
     x_list = [ projection[i] for i in range(0, len(projection), 2) ]
     y_list = [ projection[i] for i in range(1, len(projection), 2) ]
     
-    # Rearrange as array
     u = np.asarray(x_list).reshape(w, h).T
     v = np.asarray(y_list).reshape(w, h).T
 
@@ -37,7 +36,7 @@ def parse_projection_bin(path, w, h):
 
 
 def pgm2distance(img, encoded=False):
-    # With ref to issue #19
+    # See repo issue #19
     distance = np.zeros((img.shape))
     for y in range(img.shape[0]):
         for x in range(img.shape[1]):
@@ -107,6 +106,7 @@ def process_folder(args, cam):
     depth_paths = depth_paths[args.start_frame:(args.start_frame + args.max_num_frames)]    
 
     us = vs = None
+    # Process paths
     for i_path, path in enumerate(depth_paths):
         if (i_path % 10) == 0:
             print("Progress: %d/%d" % (i_path+1, len(depth_paths)))
