@@ -66,7 +66,7 @@ namespace HoloLensForCV
     {
         return concurrency::create_async(
             [this]()
-        {			
+        {
             Windows::Storage::StorageFolder^ temporaryStorageFolder =
                 Windows::Storage::ApplicationData::Current->TemporaryFolder;
 

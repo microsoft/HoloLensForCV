@@ -43,7 +43,7 @@ namespace HoloLensForCV
 
         Windows::Foundation::IAsyncAction^ StartAsync();
 
-        void Stop();		
+        void Stop();
 
         virtual ISensorFrameSink^ GetSensorFrameSink(
             _In_ SensorType sensorType);

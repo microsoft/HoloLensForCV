@@ -98,7 +98,7 @@ namespace Recorder
 
     // Sensor stream recorder for the sensor streams.
     HoloLensForCV::SensorFrameRecorder^ _sensorFrameRecorder;
-    std::atomic_bool _sensorFrameRecorderStarted;	
+    std::atomic_bool _sensorFrameRecorderStarted;
 
     // Mutex that restricts to a single recording.
     std::mutex _startStopRecordingMutex;

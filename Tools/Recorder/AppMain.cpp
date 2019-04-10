@@ -118,15 +118,15 @@ namespace Recorder
     }
 
     SaySentence(Platform::StringReference(L"Beginning recording"));
-		
+
     auto sensorFrameRecorderStartAsyncTask =
       concurrency::create_task(
         _sensorFrameRecorder->StartAsync());
 
     sensorFrameRecorderStartAsyncTask.then([&]()
-      {
-        _sensorFrameRecorderStarted = true;
-      });
+    {
+      _sensorFrameRecorderStarted = true;
+    });
   }
 
   void AppMain::StopRecording()
@@ -140,8 +140,8 @@ namespace Recorder
 
     SaySentence(Platform::StringReference(L"Ending recording, wait a moment to finish"));
 
-		_sensorFrameRecorder->Stop();
-		_sensorFrameRecorderStarted = false;
+    _sensorFrameRecorder->Stop();
+    _sensorFrameRecorderStarted = false;
 		
     SaySentence(Platform::StringReference(L"Finished recording"));
   }
