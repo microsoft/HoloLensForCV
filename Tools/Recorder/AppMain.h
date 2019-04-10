@@ -71,23 +71,8 @@ namespace Recorder
     // Plays the voice command recognition sound.
     void PlayVoiceCommandRecognitionSound();
 
-    // Initializes access to HoloLens Research Mode sensors.
+    // Initializes access to HoloLens sensors.
     void StartHoloLensMediaFrameSourceGroup();
-
-	// Initializes access to HoloLens PV sensor.
-	void StartPVMediaFrameSourceGroup();
-
-	//
-	// Enabling all of the Research Mode sensors at the same time can be quite expensive
-	// performance-wise. It's best to scope down the list of enabled sensors to just those
-	// that are required for a given task. If enabledSensorTypes is empty, all sensors are selected.
-	// To only select a subset, use the commented code below.
-	//
-	std::vector<HoloLensForCV::SensorType> enabledSensorTypes = { };
-	// std::vector<HoloLensForCV::SensorType> enabledSensorTypes = {HoloLensForCV::SensorType::VisibleLightLeftLeft, HoloLensForCV::SensorType::VisibleLightLeftFront};
-	
-	// Enable PV sensor separately
-	bool enablePV = true;
 
   private:
     // Handles playback of the voice UI prompt.
@@ -111,17 +96,9 @@ namespace Recorder
     HoloLensForCV::MediaFrameSourceGroup^ _researchModeMediaFrameSourceGroup;
     std::atomic_bool _researchModeMediaFrameSourceGroupStarted;
 
-	// Dealing with PV stream separately: Creating PV frame source group
-	HoloLensForCV::MediaFrameSourceGroup^ _PVFrameSourceGroup;
-	std::atomic_bool _PVFrameSourceGroupStarted;
-
     // Sensor stream recorder for the sensor streams.
     HoloLensForCV::SensorFrameRecorder^ _sensorFrameRecorder;
-    std::atomic_bool _sensorFrameRecorderStarted;
-
-	// Dealing with PV stream separately: Creating PV frame recorder
-	HoloLensForCV::SensorFrameRecorder^ _PVFrameRecorder;
-	std::atomic_bool _PVFrameRecorderStarted;
+    std::atomic_bool _sensorFrameRecorderStarted;	
 
     // Mutex that restricts to a single recording.
     std::mutex _startStopRecordingMutex;

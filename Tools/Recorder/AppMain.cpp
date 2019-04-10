@@ -35,7 +35,6 @@ namespace Recorder
     , _photoVideoMediaFrameSourceGroupStarted(false)
     , _researchModeMediaFrameSourceGroupStarted(false)
     , _sensorFrameRecorderStarted(false)
-	, _PVFrameRecorderStarted(false)
   {
   }
 
@@ -43,7 +42,6 @@ namespace Recorder
     Windows::Graphics::Holographic::HolographicSpace^ holographicSpace)
   {
     StartHoloLensMediaFrameSourceGroup();
-	StartPVMediaFrameSourceGroup();
 
 #ifdef RECORDER_USE_SPEECH
     StartRecognizeSpeechCommands();
@@ -80,21 +78,14 @@ namespace Recorder
   void AppMain::LoadAppState()
   {
     StartHoloLensMediaFrameSourceGroup();
-	StartPVMediaFrameSourceGroup();
   }
 
   void AppMain::SaveAppState()
   {
     if (_photoVideoMediaFrameSourceGroup == nullptr || _researchModeMediaFrameSourceGroup == nullptr) {
       return;
-    };
+    }
 
-	auto sensorFrameRecorderStopAsyncTask =
-		concurrency::create_task(
-			_mediaFrameSourceGroup->StopAsync());
-	auto PVFrameRecorderStopAsyncTask =
-		concurrency::create_task(
-			_PVFrameSourceGroup->StopAsync());
 
     concurrency::create_task(_photoVideoMediaFrameSourceGroup->StopAsync()).then([&]()
     {
@@ -127,30 +118,15 @@ namespace Recorder
     }
 
     SaySentence(Platform::StringReference(L"Beginning recording"));
-	
-	if (startSensorFrameRecorder)
-	{
-		auto sensorFrameRecorderStartAsyncTask =
-			concurrency::create_task(
-				_sensorFrameRecorder->StartAsync());
+		
+    auto sensorFrameRecorderStartAsyncTask =
+      concurrency::create_task(
+        _sensorFrameRecorder->StartAsync());
 
-		sensorFrameRecorderStartAsyncTask.then([&]()
-		{
-			_sensorFrameRecorderStarted = true;
-		});
-	}
-
-	// TODO: Can PV be better synchronized?
-	if (startPVFrameRecorder)
-	{
-		auto PVFrameRecorderStartAsyncTask =
-			concurrency::create_task(
-				_PVFrameRecorder->StartAsync());
-		PVFrameRecorderStartAsyncTask.then([&]()
-		{
-			_PVFrameRecorderStarted = true;
-		});
-	}
+    sensorFrameRecorderStartAsyncTask.then([&]()
+      {
+        _sensorFrameRecorderStarted = true;
+      });
   }
 
   void AppMain::StopRecording()
@@ -164,17 +140,9 @@ namespace Recorder
 
     SaySentence(Platform::StringReference(L"Ending recording, wait a moment to finish"));
 
-	if (stopSensorFrameRecorder)
-	{
 		_sensorFrameRecorder->Stop();
 		_sensorFrameRecorderStarted = false;
-	}
-	if (stopPVFrameRecorder)
-	{
-		_PVFrameRecorder->Stop();
-		_PVFrameRecorderStarted = false;
-	}	
-
+		
     SaySentence(Platform::StringReference(L"Finished recording"));
   }
 
@@ -494,40 +462,4 @@ namespace Recorder
         _researchModeMediaFrameSourceGroupStarted = true;
     });
   }
-
-  void AppMain::StartPVMediaFrameSourceGroup()
-  {
-	  REQUIRES(
-		  !_PVFrameSourceGroupStarted &&
-		  !_PVFrameRecorderStarted &&
-		  nullptr != _spatialPerception);
-
-	  _PVFrameRecorder =
-		  ref new HoloLensForCV::SensorFrameRecorder();
-	  _PVFrameRecorder->SetPV();
-
-	  _PVFrameSourceGroup =
-		  ref new HoloLensForCV::MediaFrameSourceGroup(
-			  HoloLensForCV::MediaFrameSourceGroupType::PhotoVideoCamera,
-			  _spatialPerception, _PVFrameRecorder);
-	  
-	  // One could avoid initializing _PVFrameRecorder and _PVFrameSourceGroup if PV stream is enabled;
-	  // however, those initializations help simplify the code at stop/start time
-	  if (enablePV)
-	  {
-		  _PVFrameRecorder->Enable(HoloLensForCV::SensorType::PhotoVideo);
-		  // This call will enable the PhotoVideo MediaFrameSourceGroup
-		  _PVFrameSourceGroup->EnableAll();
-
-		  auto startPVFrameSourceGroupTask =
-			  concurrency::create_task(
-				  _PVFrameSourceGroup->StartAsync());
-
-		  startPVFrameSourceGroupTask.then([&]() {
-			  _PVFrameSourceGroupStarted = true;
-		  });
-	  }
-  }
-
-
 }
