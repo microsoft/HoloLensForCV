@@ -142,7 +142,7 @@ namespace Recorder
 
     _sensorFrameRecorder->Stop();
     _sensorFrameRecorderStarted = false;
-		
+
     SaySentence(Platform::StringReference(L"Finished recording"));
   }
 
