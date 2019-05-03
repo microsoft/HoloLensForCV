@@ -21,6 +21,37 @@ def save_obj(output_path, points):
         for v in points:
             f.write("v %.4f %.4f %.4f\n" % (v[0], v[1], v[2]))
 
+def read_obj(path):
+    with open(path, 'r') as f:        
+        # get lines
+        lines = f.readlines()
+        
+        # create empty points
+        nlines = len(lines)
+        points = np.zeros( (nlines,3) )
+        
+        # get points
+        i = 0
+        for line in lines: 
+            elem = line.split()
+
+            # skip header lines
+            if elem[0] == '#':
+                continue
+            
+            # elem[0] should be 'v'
+            if elem[0] == 'v':
+                points[i,0] = elem[1]
+                points[i,1] = elem[2]
+                points[i,2] = elem[3]
+                i = i+1
+        
+        # remove header and empty lines 
+        if i < nlines:
+            diff = nlines - i
+            points = points[:-diff]
+        
+        return points
 
 def parse_projection_bin(path, w, h):
     # See repo issue #63
@@ -83,6 +114,7 @@ def process_folder(args, cam):
     folder = args.workspace_path
     cam_folder = os.path.join(folder, cam)
     assert(os.path.exists(cam_folder))
+
     # Output folder
     output_folder = os.path.join(args.output_path, cam)
     if not os.path.exists(output_folder):
@@ -105,21 +137,36 @@ def process_folder(args, cam):
         args.max_num_frames = len(depth_paths)
     depth_paths = depth_paths[args.start_frame:(args.start_frame + args.max_num_frames)]    
 
-    us = vs = None
     # Process paths
+    merge_points = args.merge_points
+    overwrite    = args.overwrite
+    use_cache    = args.use_cache
+    points_merged = []
+    us = vs = None
     for i_path, path in enumerate(depth_paths):
-        if (i_path % 10) == 0:
-            print("Progress: %d/%d" % (i_path+1, len(depth_paths)))
         output_suffix = "_%s" % args.output_suffix if len(args.output_suffix) else ""
         pcloud_output_path = os.path.join(output_folder, os.path.basename(path).replace(".pgm", "%s.obj" % output_suffix))
-        if os.path.exists(pcloud_output_path):
-            continue
-        img = cv2.imread(path, -1)
-        if us is None or vs is None:
-            us, vs = parse_projection_bin(bin_path, img.shape[1], img.shape[0])
-        cam2world = get_cam2world(path, sensor_poses) if sensor_poses is not None else None
-        points = get_points(img, us, vs, cam2world, depth_range)        
-        save_obj(pcloud_output_path, points)
+        print("Progress file (%d/%d): %s" %
+              (i_path+1, len(depth_paths), pcloud_output_path))
+        
+        # if file exist
+        output_file_exist = os.path.exists(pcloud_output_path)
+        if output_file_exist and use_cache:
+            points = read_obj(pcloud_output_path)
+        else:
+            img = cv2.imread(path, -1)
+            if us is None or vs is None:
+                us, vs = parse_projection_bin(bin_path, img.shape[1], img.shape[0])
+            cam2world = get_cam2world(path, sensor_poses) if sensor_poses is not None else None
+            points = get_points(img, us, vs, cam2world, depth_range)  
+            
+        if merge_points:
+            points_merged.extend(points)
+        
+        if not output_file_exist or overwrite:
+            save_obj(pcloud_output_path, points)
+        
+    return points_merged
 
 
 def parse_args():
@@ -132,6 +179,9 @@ def parse_args():
     parser.add_argument("--ignore_sensor_poses", action='store_true', help="Drop HL pose information (point clouds will not be aligned to a common ref space)")
     parser.add_argument("--start_frame", type=int, default=0)
     parser.add_argument("--max_num_frames", type=int, default=-1)
+    parser.add_argument("--merge_points",  action='store_true', default=False, help="Save file with all the points (in world coordinate system)") 
+    parser.add_argument("--use_cache", action='store_true', default=False, help="Load already existing files") 
+    parser.add_argument("--overwrite", action='store_true', default=False, help="Write output files (overwrite if exist).")
 
     args = parser.parse_args()
 
@@ -148,18 +198,26 @@ def parse_args():
 
 
 def main():
+    # read options
     args = parse_args()
-
-    if args.short_throw:
-        print('Processing short throw depth folder...')
-        process_folder(args, 'short_throw_depth')
-        print('done.')
-
+    if args.short_throw:        
+        camera = 'short_throw_depth'
     if args.long_throw:
-        print('Processing long throw depth folder...')
-        process_folder(args, 'long_throw_depth')
-        print('done.')
+        camera = 'long_throw_depth'
 
+    # process
+    print("Processing '%s' depth folder..." % camera)
+    points = process_folder(args, camera)
+    print('Done processing.')
+    
+    # save output
+    if args.merge_points:
+        output_folder = os.path.join(args.output_path, camera)
+        output_filename = output_folder + ".obj"
+        print("Saving file with all points: %s" % output_filename)
+        save_obj(output_filename, points)
+        
+    print("Done.")
 
 if __name__ == "__main__":    
-    main()    
+    main()
