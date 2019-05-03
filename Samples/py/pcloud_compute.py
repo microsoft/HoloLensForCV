@@ -90,15 +90,27 @@ def get_points(img, us, vs, cam2world, depth_range):
     points = []
     for i in np.arange(distance_img.shape[0]):
         for j in np.arange(distance_img.shape[1]):
-            z = distance_img[i, j]
             x = us[i, j]
             y = vs[i, j]
-            if np.isinf(x) or np.isinf(y) or z < depth_range[0] or z > depth_range[1]:
+            
+            # Compute Z values as described in issue #63
+            # https://github.com/Microsoft/HoloLensForCV/issues/63#issuecomment-429469425
+            D = distance_img[i, j]
+            z = - float(D) / np.sqrt(x*x + y*y + 1)
+            
+            if np.isinf(x) or np.isinf(y) or \
+               D < depth_range[0] or D > depth_range[1]:
                 continue
-            point = np.array([-x, -y, -1.])
-            point /= np.linalg.norm(point)
-            point = t + z * np.dot(R, point)
-            points.append(point.reshape((1, -1)))    
+            
+            # 3D point in camera coordinate system
+            point = np.array([x, y, 1.]) * z
+            
+            # Camera to World
+            point = np.dot(R, point) + t
+
+            # Append point
+            points.append(point)
+   
     return np.vstack(points)
 
 
