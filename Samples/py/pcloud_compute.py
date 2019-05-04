@@ -37,14 +37,8 @@ def parse_projection_bin(path, w, h):
 
 def pgm2distance(img, encoded=False):
     # See repo issue #19
-    distance = np.zeros((img.shape))
-    for y in range(img.shape[0]):
-        for x in range(img.shape[1]):
-            val = hex(img[y, x])
-            val = str(val[2:]).zfill(4)        
-            val = val[-2:] + val[:2]
-            distance[y, x] = float(int(val, 16))/1000.0
-    return distance
+    img.byteswap(inplace=True)
+    return img.astype(np.float)/1000.0
 
 
 def get_points(img, us, vs, cam2world, depth_range):
