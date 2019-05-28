@@ -331,14 +331,15 @@ def synchronize_sensor_frames(args, recording_path, output_path, camera_names):
                 zip(sync_image_paths[ref_image_name],
                     sync_image_names[ref_image_name],
                     sync_image_poses[ref_image_name]):
-            camera_name = os.path.dirname(image_name)
-            new_image_path = os.path.join(
-                output_path, camera_name, image_basename)
-            if not os.path.exists(new_image_path):
-                shutil.copyfile(image_path, new_image_path)
-            new_image_name = os.path.join(camera_name, image_basename)
-            frame_images.append(new_image_name.replace("\\", "/"))
-            frame_poses.append(image_pose)
+            if len(sync_image_paths[ref_image_name]) == 4:
+                camera_name = os.path.dirname(image_name)
+                new_image_path = os.path.join(
+                    output_path, camera_name, image_basename)
+                if not os.path.exists(new_image_path):
+                    shutil.copyfile(image_path, new_image_path)
+                new_image_name = os.path.join(camera_name, image_basename)
+                frame_images.append(new_image_name.replace("\\", "/"))
+                frame_poses.append(image_pose)
         sync_frames.append(frame_images)
         sync_poses.append(frame_poses)
 
