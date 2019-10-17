@@ -389,6 +389,87 @@ namespace HoloLensForCV
         }, Concurrency::task_continuation_context::get_current_winrt_context());
     }
 
+	//CameraIntrinsics^ 
+
+
+
+	// ADDED : ARJUN
+	
+	Windows::Media::Devices::Core::CameraIntrinsics^ MediaFrameSourceGroup::GetCameraIntrinsics(SensorType inputSensorType) { //Async??
+
+		Windows::Media::Capture::Frames::MediaFrameSource^ selectedMediaFrameSource;
+		Windows::Media::Devices::Core::CameraIntrinsics^ output;
+		
+		for (Windows::Foundation::Collections::IKeyValuePair<Platform::String^, Windows::Media::Capture::Frames::MediaFrameSource^>^ kvp : _mediaCapture->FrameSources)
+		{
+			Windows::Media::Capture::Frames::MediaFrameSource^ source =
+				kvp->Value;
+
+			SensorType sensorType =
+				GetSensorType(
+					source);
+
+			if (IsEnabled(sensorType) && sensorType == inputSensorType) {
+
+				selectedMediaFrameSource = source;
+
+				break;
+
+			}
+
+		}
+
+
+		/*Platform::String^ requestedSubtype =
+			nullptr;
+
+		auto found =
+			std::find_if(
+				begin(selectedMediaFrameSource->SupportedFormats),
+				end(selectedMediaFrameSource->SupportedFormats),
+				[&](Windows::Media::Capture::Frames::MediaFrameFormat^ format)
+		{
+			requestedSubtype =
+				GetSubtypeForFrameReader(
+					selectedMediaFrameSource->Info->SourceKind,
+					format);
+
+			return requestedSubtype != nullptr;
+
+		});
+
+		output = selectedMediaFrameSource->TryGetCameraIntrinsics(*found);
+		*/
+
+		output = selectedMediaFrameSource->TryGetCameraIntrinsics(selectedMediaFrameSource->CurrentFormat);
+		if (output == nullptr) {
+			auto found = std::find_if(begin(selectedMediaFrameSource->SupportedFormats),
+				end(selectedMediaFrameSource->SupportedFormats),
+				[&](Windows::Media::Capture::Frames::MediaFrameFormat^ format)
+			{
+				output = selectedMediaFrameSource->TryGetCameraIntrinsics(format);
+				
+				if (output == nullptr) {
+					dbg::trace(
+						L"MediaFrameSourceGroup::GetCameraIntrinsics: format %s-%s @%i/%iHz intrinsics nullptr",
+						format->MajorType->Data(),
+						format->Subtype->Data(),
+						format->FrameRate->Numerator,
+						format->FrameRate->Denominator);
+				}
+				return output != nullptr;
+
+			});
+
+		}
+
+		return output;
+
+	}
+	
+
+
+
     SensorType MediaFrameSourceGroup::GetSensorType(
         Windows::Media::Capture::Frames::MediaFrameSource^ source)
     {
@@ -709,4 +790,7 @@ namespace HoloLensForCV
 
         return cleanupTask;
     }
+
+
+
 }
