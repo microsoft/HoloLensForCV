@@ -110,6 +110,8 @@ def get_points(img, us, vs, cam2world, depth_range):
 
 def get_cam2world(path, sensor_poses):
     time_stamp = int(os.path.splitext(os.path.basename(path))[0])
+    if time_stamp not in sensor_poses.keys():
+        return None
     world2cam = sensor_poses[time_stamp]    
     cam2world = np.linalg.inv(world2cam)
     return cam2world
