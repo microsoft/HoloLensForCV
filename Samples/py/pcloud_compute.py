@@ -105,7 +105,7 @@ def get_points(img, us, vs, cam2world, depth_range):
             # Append point
             points.append(point)
    
-    return np.vstack(points)
+    return np.vstack(points) if points else np.array(points)
 
 
 def get_cam2world(path, sensor_poses):
