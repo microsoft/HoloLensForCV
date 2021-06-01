@@ -1,5 +1,15 @@
+---
+page_type: sample
+name: HoloLens2ForCV samples
+description: HoloLens Research Mode samples for building and deploying projects with OpenCV with sensor data streaming and recording.
+languages:
+- cpp
+products:
+- windows-mixed-reality
+- hololens
+---
 
-# Purpose
+# HoloLensForCV samples
 
 We want to help people use the HoloLens as a Computer Vision and Robotics research device.
 The project was launched at CVPR 2017, and we intend to extend it as new capabilities become
