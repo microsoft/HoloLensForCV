@@ -112,13 +112,23 @@ namespace HoloLensForCV
         Windows::Graphics::Imaging::SoftwareBitmap^ softwareBitmap =
             frame->VideoMediaFrame->SoftwareBitmap;
 
+		Windows::Media::Devices::Core::CameraIntrinsics^ cameraIntrinsics = frame->VideoMediaFrame->CameraIntrinsics;
+
         //
         // Finally, wrap all of the above information in a SensorFrame object and pass it
         // down to the sensor frame sink. We'll also retain a reference to the latest sensor
         // frame on this object for immediate consumption by the app.
         //
-        SensorFrame^ sensorFrame =
-            ref new SensorFrame(_sensorType, timestamp, softwareBitmap);
+		SensorFrame^ sensorFrame =
+			//   ref new SensorFrame(_sensorType, timestamp, softwareBitmap);
+		//	ref new SensorFrame(_sensorType, timestamp, softwareBitmap, frame);
+			ref new SensorFrame(
+				_sensorType
+				,timestamp
+				,softwareBitmap
+			//	,cameraIntrinsics
+			);
+
 
         //
         // Extract the frame-to-origin transform, if the MFT exposed it:
@@ -178,6 +188,8 @@ namespace HoloLensForCV
                 zero;
         }
 
+
+		//frame->Properties->Lookup()
         //
         // Extract camera view transform, if the MFT exposed it:
         //
