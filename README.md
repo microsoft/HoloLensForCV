@@ -50,7 +50,7 @@ Windows Holographic devices include the Microsoft HoloLens and the Microsoft Hol
 Additionally, to stay on top of the latest updates to Windows and the development tools, become
 a Windows Insider by joining the Windows Insider Program.
 
-   [Become a Windows Insider](https://insider.windows.com/)
+   [Become  Windows Insider](https://insider.windows.com/)
 
 ## Using the samples
 
