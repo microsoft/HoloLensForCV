@@ -69,3 +69,6 @@
 #include "MediaFrameSourceGroup.h"
 
 #include "MultiFrameBuffer.h"
+
+#include <Eigen/Eigen>
+

@@ -36,6 +36,9 @@ namespace HoloLensForCV
         SensorFrame^ GetLatestSensorFrame(
             SensorType sensorType);
 
+		Windows::Media::Devices::Core::CameraIntrinsics^ GetCameraIntrinsics(SensorType sensorType);
+
+
     private:
         /// <summary>
         /// Returns true if the sensor was explicitly enabled by the user.
@@ -74,6 +77,8 @@ namespace HoloLensForCV
         /// </summary>
         concurrency::task<bool> TryInitializeMediaCaptureAsync(
             Windows::Media::Capture::Frames::MediaFrameSourceGroup^ group);
+
+
 
     private:
         MediaFrameSourceGroupType _mediaFrameSourceGroupType;
